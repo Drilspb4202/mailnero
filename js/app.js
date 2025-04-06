@@ -2136,15 +2136,28 @@ class MailSlurpApp {
      */
     ensureVpnWarningVisible() {
         // Находим элемент предупреждения о VPN
-        const vpnWarning = document.querySelector('.vpn-warning');
+        const vpnWarning = document.querySelector('.warning-section');
         
         if (vpnWarning) {
+            console.log('VPN warning found, ensuring visibility');
             // Убеждаемся, что предупреждение всегда видимо
             vpnWarning.style.display = 'flex';
+            vpnWarning.style.opacity = '1';
+            vpnWarning.style.visibility = 'visible';
             
-            // Добавляем стиль важности
-            vpnWarning.style.zIndex = '1000';
-            vpnWarning.style.position = 'relative';
+            // Добавляем немного анимации для привлечения внимания
+            setTimeout(() => {
+                vpnWarning.style.transition = 'all 0.5s ease-in-out';
+                vpnWarning.style.boxShadow = '0 0 15px rgba(255, 80, 80, 0.7)';
+                
+                // Пульсирующая анимация
+                setInterval(() => {
+                    vpnWarning.style.boxShadow = 
+                        vpnWarning.style.boxShadow === '0 0 15px rgba(255, 80, 80, 0.7)' 
+                            ? '0 0 5px rgba(255, 80, 80, 0.3)' 
+                            : '0 0 15px rgba(255, 80, 80, 0.7)';
+                }, 1000);
+            }, 500);
             
             // Убеждаемся, что предупреждение не будет скрыто
             const observer = new MutationObserver((mutations) => {
@@ -2152,9 +2165,9 @@ class MailSlurpApp {
                     if (mutation.type === 'attributes' && 
                         (mutation.attributeName === 'style' || 
                          mutation.attributeName === 'class')) {
-                        if (vpnWarning.style.display === 'none') {
-                            vpnWarning.style.display = 'flex';
-                        }
+                        vpnWarning.style.display = 'flex';
+                        vpnWarning.style.opacity = '1';
+                        vpnWarning.style.visibility = 'visible';
                     }
                 }
             });
@@ -2162,12 +2175,18 @@ class MailSlurpApp {
             // Начинаем наблюдать за изменениями стилей элемента
             observer.observe(vpnWarning, { 
                 attributes: true,
-                attributeFilter: ['style', 'class']
+                attributeFilter: ['style', 'class', 'hidden']
             });
             
-            console.log('VPN предупреждение будет отображаться постоянно');
+            // Гарантируем, что предупреждение не будет скрыто после полной загрузки DOM
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('DOM fully loaded, ensuring VPN warning visibility');
+                vpnWarning.style.display = 'flex';
+                vpnWarning.style.opacity = '1';
+                vpnWarning.style.visibility = 'visible';
+            });
         } else {
-            console.warn('Предупреждение о VPN не найдено в DOM');
+            console.warn('VPN warning not found in DOM');
         }
     }
 }

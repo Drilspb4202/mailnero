@@ -158,14 +158,40 @@
                     </div>
                     
                     <!-- VPN Warning -->
-                    <div class="info-panel warning-note vpn-warning">
-                        <div class="info-panel-icon">
+                    <div class="warning-section" style="margin: 15px 0; padding: 15px; background-color: rgba(255, 50, 50, 0.2); border: 2px solid #ff5555; border-radius: 8px; display: flex; align-items: center;">
+                        <div style="font-size: 24px; color: #ff5555; margin-right: 15px;">
                             <i class="fas fa-exclamation-triangle"></i>
                         </div>
-                        <div class="info-panel-content">
-                            <h4><i class="fas fa-shield-alt"></i> <span data-i18n="vpn_warning">Внимание! Если вы находитесь в России, для корректной работы сервиса необходимо использовать VPN. В настоящее время сервис может работать нестабильно на мобильных устройствах.</span></h4>
+                        <div>
+                            <h4 style="color: #ff5555; margin: 0 0 10px 0; font-weight: bold;">Внимание! Важная информация</h4>
+                            <p style="margin: 0; color: #fff;"><span data-i18n="vpn_warning">Если вы находитесь в России, для корректной работы сервиса необходимо использовать VPN. В настоящее время сервис может работать нестабильно на мобильных устройствах.</span></p>
                         </div>
                     </div>
+                    
+                    <!-- Скрипт для обеспечения видимости предупреждения -->
+                    <script>
+                        (function() {
+                            const warning = document.querySelector('.warning-section');
+                            if (warning) {
+                                warning.style.display = 'flex';
+                                warning.style.opacity = '1';
+                                warning.style.visibility = 'visible';
+                                
+                                // Анимация для привлечения внимания
+                                let isIncreasing = false;
+                                warning.style.transition = 'box-shadow 0.5s';
+                                
+                                setInterval(() => {
+                                    if (isIncreasing) {
+                                        warning.style.boxShadow = '0 0 15px rgba(255, 80, 80, 0.7)';
+                                    } else {
+                                        warning.style.boxShadow = '0 0 5px rgba(255, 80, 80, 0.3)';
+                                    }
+                                    isIncreasing = !isIncreasing;
+                                }, 1000);
+                            }
+                        })();
+                    </script>
                     
                     <!-- Основная информация -->
                     <div class="info-panel">

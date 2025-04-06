@@ -3107,3 +3107,48 @@ input:checked + .api-mode-slider {
         margin: 10px auto;
     }
 }
+
+/* Стили для предупреждения о VPN */
+.warning-section {
+    margin: 15px 0 !important;
+    padding: 15px !important;
+    background-color: rgba(255, 50, 50, 0.2) !important;
+    border: 2px solid #ff5555 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    z-index: 1000 !important;
+    position: relative !important;
+}
+
+.warning-section h4 {
+    color: #ff5555 !important;
+    margin: 0 0 10px 0 !important;
+    font-weight: bold !important;
+}
+
+.warning-section p {
+    margin: 0 !important;
+    color: #fff !important;
+}
+
+.warning-section i {
+    color: #ff5555 !important;
+}
+
+/* Анимация пульсации для предупреждения */
+@keyframes pulse-warning {
+    0% {
+        box-shadow: 0 0 5px rgba(255, 80, 80, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(255, 80, 80, 0.7);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(255, 80, 80, 0.3);
+    }
+}
+
+.warning-section {
+    animation: pulse-warning 2s infinite;
+}

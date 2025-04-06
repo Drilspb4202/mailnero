@@ -38,6 +38,10 @@
 
     <!-- Скрипт проверки API-ключей -->
     <script src="js/api-keys-checker.js"></script>
+    
+    <!-- Яндекс.RTB -->
+    <script>window.yaContextCb=window.yaContextCb||[]</script>
+    <script src="https://yandex.ru/ads/system/context.js" async></script>
 </head>
 <body>
     <!-- Анимированный фон -->
@@ -73,16 +77,16 @@
 
         <!-- Левый рекламный блок -->
         <div class="ad-container-left">
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-ad fa-3x"></i>
-                <p>Рекламное место 1</p>
-            </div>
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-bullhorn fa-3x"></i>
-                <p>Рекламное место 2</p>
-            </div>
+            <!-- Яндекс.RTB R-A-14920627-2 -->
+            <div id="yandex_rtb_R-A-14920627-2"></div>
+            <script>
+            window.yaContextCb.push(() => {
+                Ya.Context.AdvManager.render({
+                    "blockId": "R-A-14920627-2",
+                    "renderTo": "yandex_rtb_R-A-14920627-2"
+                })
+            })
+            </script>
         </div>
         
         <!-- Основное содержимое -->
@@ -132,6 +136,38 @@
                             <i class="fas fa-plus"></i> <span data-i18n="create_new_inbox">Создать новый</span>
                         </button>
                     </div>
+                    
+                    <div class="info-panel">
+                        <div class="info-panel-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="info-panel-content">
+                            <h4 data-i18n="welcome_title">👋 Добро пожаловать в NeuroMail!</h4>
+                            <p data-i18n="welcome_desc">Это сервис временной почты для тестирования и разработки. Создайте новый почтовый ящик, чтобы получить временный email адрес.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Яндекс.RTB R-A-14920627-1 -->
+                    <div id="yandex_rtb_R-A-14920627-1"></div>
+                    <script>
+                    window.yaContextCb.push(() => {
+                        Ya.Context.AdvManager.render({
+                            "blockId": "R-A-14920627-1",
+                            "renderTo": "yandex_rtb_R-A-14920627-1"
+                        })
+                    })
+                    </script>
+                    
+                    <!-- Яндекс.RTB R-A-14920627-4 -->
+                    <div id="yandex_rtb_R-A-14920627-4"></div>
+                    <script>
+                    window.yaContextCb.push(() => {
+                        Ya.Context.AdvManager.render({
+                            "blockId": "R-A-14920627-2",
+                            "renderTo": "yandex_rtb_R-A-14920627-4"
+                        })
+                    })
+                    </script>
                     
                     <div class="inbox-list-container">
                         <table class="data-table" id="inboxes-table">
@@ -514,16 +550,16 @@
 
         <!-- Правый рекламный блок -->
         <div class="ad-container-right">
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-chart-line fa-3x"></i>
-                <p>Рекламное место 3</p>
-            </div>
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-gift fa-3x"></i>
-                <p>Рекламное место 4</p>
-            </div>
+            <!-- Яндекс.RTB R-A-14920627-3 -->
+            <div id="yandex_rtb_R-A-14920627-3"></div>
+            <script>
+            window.yaContextCb.push(() => {
+                Ya.Context.AdvManager.render({
+                    "blockId": "R-A-14920627-3",
+                    "renderTo": "yandex_rtb_R-A-14920627-3"
+                })
+            })
+            </script>
         </div>
     </div>
 

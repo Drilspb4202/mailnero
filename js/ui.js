@@ -107,39 +107,61 @@ class MailSlurpUI {
      */
     setupEventListeners() {
         // Навигация
-        this.navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                this.activateTab(item.dataset.target);
+        if (this.navItems) {
+            this.navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    this.activateTab(item.dataset.target);
+                });
             });
-        });
+        }
         
         // Закрытие модальных окон
-        this.modalCloseButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const modal = e.target.closest('.modal');
-                this.closeModal(modal);
+        if (this.modalCloseButtons) {
+            this.modalCloseButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const modal = e.target.closest('.modal');
+                    this.closeModal(modal);
+                });
             });
-        });
+        }
         
         // Обработчики кнопок
-        this.createInboxBtn.addEventListener('click', () => this.openModal(this.createInboxModal));
-        this.sendEmailBtn.addEventListener('click', () => this.openModal(this.sendEmailModal));
-        this.closeEmailBtn.addEventListener('click', () => this.hideEmailViewer());
+        if (this.createInboxBtn) {
+            this.createInboxBtn.addEventListener('click', () => this.openModal(this.createInboxModal));
+        }
+        
+        if (this.sendEmailBtn) {
+            this.sendEmailBtn.addEventListener('click', () => this.openModal(this.sendEmailModal));
+        }
+        
+        if (this.closeEmailBtn) {
+            this.closeEmailBtn.addEventListener('click', () => this.hideEmailViewer());
+        }
         
         // Добавляем обработчик для кнопки подтверждения создания ящика
-        this.confirmCreateInboxBtn.addEventListener('click', () => {
-            if(this.app) {
-                this.app.createInbox();
-            } else {
-                console.error('App не инициализирован для создания ящика');
-            }
-        });
+        if (this.confirmCreateInboxBtn) {
+            this.confirmCreateInboxBtn.addEventListener('click', () => {
+                if(this.app) {
+                    this.app.createInbox();
+                } else {
+                    console.error('App не инициализирован для создания ящика');
+                }
+            });
+        }
         
         // Обработчики настроек
-        this.updateApiKeyBtn.addEventListener('click', () => this.onUpdateApiKey());
-        this.saveTimeoutsBtn.addEventListener('click', () => this.onSaveTimeouts());
-        this.saveAutoDeleteBtn.addEventListener('click', () => this.onSaveAutoDelete());
-        this.saveLoggingBtn.addEventListener('click', () => this.onSaveLogging());
+        if (this.updateApiKeyBtn) {
+            this.updateApiKeyBtn.addEventListener('click', () => this.onUpdateApiKey());
+        }
+        if (this.saveTimeoutsBtn) {
+            this.saveTimeoutsBtn.addEventListener('click', () => this.onSaveTimeouts());
+        }
+        if (this.saveAutoDeleteBtn) {
+            this.saveAutoDeleteBtn.addEventListener('click', () => this.onSaveAutoDelete());
+        }
+        if (this.saveLoggingBtn) {
+            this.saveLoggingBtn.addEventListener('click', () => this.onSaveLogging());
+        }
         
         // Обработчики для кошелька USDT
         const showWalletBtn = document.getElementById('show-usdt-wallet');
@@ -228,13 +250,29 @@ class MailSlurpUI {
      * @param {string} tabId - ID вкладки для активации
      */
     activateTab(tabId) {
-        // Деактивируем все вкладки
-        this.navItems.forEach(item => item.classList.remove('active'));
-        this.contentSections.forEach(section => section.classList.remove('active'));
+        // Деактивируем все вкладки, если они существуют
+        if (this.navItems) {
+            this.navItems.forEach(item => item.classList.remove('active'));
+        }
         
-        // Активируем выбранную вкладку
-        document.querySelector(`.nav-item[data-target="${tabId}"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
+        if (this.contentSections) {
+            this.contentSections.forEach(section => section.classList.remove('active'));
+        }
+        
+        // Активируем выбранную вкладку, проверяя существование элементов
+        const navItem = document.querySelector(`.nav-item[data-target="${tabId}"]`);
+        if (navItem) {
+            navItem.classList.add('active');
+        } else {
+            console.warn(`Не найден элемент навигации для вкладки ${tabId}`);
+        }
+        
+        const tabSection = document.getElementById(tabId);
+        if (tabSection) {
+            tabSection.classList.add('active');
+        } else {
+            console.warn(`Не найдена секция для вкладки ${tabId}`);
+        }
     }
     
     /**

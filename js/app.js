@@ -34,11 +34,16 @@ class MailSlurpApp {
     }
     
     /**
-     * Инициализировать приложение
+     * Инициализация приложения
      * @returns {Promise} - Promise, который разрешается после завершения инициализации
      */
     async init() {
         try {
+            console.log('Инициализация MailSlurp App...');
+
+            // Убеждаемся, что предупреждение о VPN отображается
+            this.ensureVpnWarningVisible();
+            
             // Привязываем обработчики событий UI к методам приложения
             this.bindUIEvents();
             
@@ -2124,6 +2129,46 @@ class MailSlurpApp {
         });
         
         return unreadCount;
+    }
+    
+    /**
+     * Убедиться, что предупреждение о VPN видимо
+     */
+    ensureVpnWarningVisible() {
+        // Находим элемент предупреждения о VPN
+        const vpnWarning = document.querySelector('.vpn-warning');
+        
+        if (vpnWarning) {
+            // Убеждаемся, что предупреждение всегда видимо
+            vpnWarning.style.display = 'flex';
+            
+            // Добавляем стиль важности
+            vpnWarning.style.zIndex = '1000';
+            vpnWarning.style.position = 'relative';
+            
+            // Убеждаемся, что предупреждение не будет скрыто
+            const observer = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (mutation.type === 'attributes' && 
+                        (mutation.attributeName === 'style' || 
+                         mutation.attributeName === 'class')) {
+                        if (vpnWarning.style.display === 'none') {
+                            vpnWarning.style.display = 'flex';
+                        }
+                    }
+                }
+            });
+            
+            // Начинаем наблюдать за изменениями стилей элемента
+            observer.observe(vpnWarning, { 
+                attributes: true,
+                attributeFilter: ['style', 'class']
+            });
+            
+            console.log('VPN предупреждение будет отображаться постоянно');
+        } else {
+            console.warn('Предупреждение о VPN не найдено в DOM');
+        }
     }
 }
 

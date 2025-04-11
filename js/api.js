@@ -709,26 +709,30 @@ class MailSlurpApi {
     /**
      * Скачать вложение по ID
      * @param {string} attachmentId - ID вложения
-     * @returns {Promise<Blob>} - Данные вложения в виде Blob
+     * @returns {Promise<Blob>} - Данные вложения в формате Blob
      */
     async downloadAttachment(attachmentId) {
         try {
             console.log('Скачивание вложения с ID:', attachmentId);
             
-            const response = await fetch(`${this.baseUrl}/attachments/${attachmentId}`, {
-                method: 'GET',
-                headers: {
-                    'x-api-key': this.apiKey
+            // Повторяем запрос с повторными попытками
+            return await this.withRetry(async () => {
+                const response = await fetch(`${this.baseUrl}/attachments/${attachmentId}`, {
+                    method: 'GET',
+                    headers: {
+                        'x-api-key': this.apiKey,
+                        'Accept': '*/*'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.error(`Ошибка API при скачивании вложения: ${response.status} ${response.statusText}`);
+                    throw new Error(`Ошибка при скачивании вложения: ${response.status} ${response.statusText}`);
                 }
+                
+                // Возвращаем данные как Blob для скачивания
+                return await response.blob();
             });
-            
-            if (!response.ok) {
-                console.error(`Ошибка API при скачивании вложения: ${response.status} ${response.statusText}`);
-                throw new Error(`Ошибка при скачивании вложения: ${response.status} ${response.statusText}`);
-            }
-            
-            // Возвращаем данные как Blob для скачивания
-            return await response.blob();
         } catch (error) {
             console.error('Ошибка при скачивании вложения:', error);
             throw error;

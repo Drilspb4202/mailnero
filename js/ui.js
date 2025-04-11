@@ -477,21 +477,12 @@ class MailSlurpUI {
      * Отобразить загрузку контента письма
      */
     showEmailContentLoading() {
-        const emailContent = document.getElementById('email-content');
-        const emailBody = document.getElementById('email-body');
+        // Создаем анимированный индикатор загрузки
+        const loader = document.createElement('div');
+        loader.className = 'email-content-loader';
         
-        if (emailContent) {
-            emailContent.classList.add('active');
-        }
-        
-        if (emailBody) {
-            emailBody.innerHTML = `
-                <div class="loading-placeholder">
-                    <div class="spinner"></div>
-                    <p>Загрузка содержимого письма...</p>
-                </div>
-            `;
-        }
+        // Добавляем лоадер в контейнер содержимого письма
+        this.emailBody.appendChild(loader);
     }
     
     /**
@@ -1764,11 +1755,49 @@ class MailSlurpUI {
                 const item = document.createElement('li');
                 item.className = 'attachment-item';
                 
-                // Создаем ссылку для скачивания
+                // Создаем кнопку для скачивания вместо обычной ссылки
                 const link = document.createElement('a');
-                link.href = attachment.downloadUrl || '#';
-                link.target = '_blank';
-                link.download = attachment.name || 'attachment';
+                link.className = 'attachment-link';
+                link.href = 'javascript:void(0)'; // Предотвращаем перезагрузку страницы
+                link.dataset.attachmentId = attachment.id; // Сохраняем ID вложения как data-атрибут
+                
+                // Добавляем обработчик клика для скачивания
+                link.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    
+                    try {
+                        // Показываем уведомление о начале загрузки
+                        this.showToast('Загрузка вложения...', 'info');
+                        
+                        // Получаем ID вложения из data-атрибута
+                        const attachmentId = e.currentTarget.dataset.attachmentId;
+                        
+                        // Вызываем метод API для скачивания вложения
+                        const blob = await this.app.api.downloadAttachment(attachmentId);
+                        
+                        // Создаем временную ссылку для скачивания Blob
+                        const downloadUrl = window.URL.createObjectURL(blob);
+                        const tempLink = document.createElement('a');
+                        tempLink.href = downloadUrl;
+                        tempLink.download = attachment.name || 'attachment';
+                        
+                        // Добавляем ссылку в DOM, кликаем и удаляем
+                        document.body.appendChild(tempLink);
+                        tempLink.click();
+                        document.body.removeChild(tempLink);
+                        
+                        // Освобождаем объектный URL после использования
+                        setTimeout(() => {
+                            window.URL.revokeObjectURL(downloadUrl);
+                        }, 100);
+                        
+                        // Показываем уведомление об успешной загрузке
+                        this.showToast('Вложение успешно загружено', 'success');
+                    } catch (error) {
+                        console.error('Ошибка при скачивании вложения:', error);
+                        this.showToast('Ошибка при скачивании вложения: ' + error.message, 'error');
+                    }
+                });
                 
                 // Иконка в зависимости от типа файла
                 const icon = document.createElement('i');
@@ -1807,6 +1836,12 @@ class MailSlurpUI {
                     fileSize.textContent = this.formatFileSize(attachment.size);
                     link.appendChild(fileSize);
                 }
+                
+                // Добавляем кнопку загрузки
+                const downloadButton = document.createElement('span');
+                downloadButton.className = 'download-button';
+                downloadButton.innerHTML = '<i class="fas fa-download"></i>';
+                link.appendChild(downloadButton);
                 
                 item.appendChild(link);
                 attachmentsList.appendChild(item);

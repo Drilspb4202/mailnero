@@ -3152,3 +3152,140 @@ input:checked + .api-mode-slider {
 .warning-section {
     animation: pulse-warning 2s infinite;
 }
+
+/* Стили для вложений */
+.email-attachments {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
+.email-attachments h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #555;
+}
+
+.attachments-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.attachment-item {
+    margin-bottom: 8px;
+}
+
+.attachment-link {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 4px;
+    text-decoration: none;
+    color: #333;
+    transition: background-color 0.2s, transform 0.1s;
+    cursor: pointer;
+}
+
+.attachment-link:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.attachment-link i {
+    margin-right: 10px;
+    font-size: 18px;
+    color: #666;
+}
+
+.attachment-link span {
+    margin-right: 8px;
+}
+
+.attachment-size {
+    color: #888;
+    font-size: 0.8em;
+    margin-left: auto;
+}
+
+.download-button {
+    margin-left: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background-color: #4a90e2;
+    border-radius: 50%;
+    color: white;
+    transition: background-color 0.2s;
+}
+
+.download-button i {
+    margin: 0;
+    font-size: 14px;
+    color: white;
+}
+
+.attachment-link:hover .download-button {
+    background-color: #3a7bc8;
+}
+
+/* Стили для iframe и контента почты */
+.email-content-iframe {
+    width: 100%;
+    border: none;
+    background-color: #ffffff;
+    border-radius: 4px;
+    overflow: hidden;
+    min-height: 100px;
+    transition: height 0.3s;
+}
+
+.email-content-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+}
+
+.email-content-loader::after {
+    content: "";
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4a90e2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.email-content-text {
+    white-space: pre-wrap;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 4px;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.email-content-error {
+    padding: 15px;
+    background-color: rgba(255, 0, 0, 0.05);
+    border-left: 4px solid #ff5555;
+    color: #ff5555;
+    font-style: italic;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

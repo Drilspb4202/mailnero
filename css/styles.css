@@ -3289,3 +3289,18 @@ input:checked + .api-mode-slider {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+.attachment-link.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(230, 230, 230, 0.7);
+}
+
+.attachment-link.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.attachment-link.disabled .download-button {
+    background-color: #999;
+}

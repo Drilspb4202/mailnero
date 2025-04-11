@@ -1759,45 +1759,67 @@ class MailSlurpUI {
                 const link = document.createElement('a');
                 link.className = 'attachment-link';
                 link.href = 'javascript:void(0)'; // Предотвращаем перезагрузку страницы
-                link.dataset.attachmentId = attachment.id; // Сохраняем ID вложения как data-атрибут
                 
-                // Добавляем обработчик клика для скачивания
-                link.addEventListener('click', async (e) => {
-                    e.preventDefault();
+                // Убедимся, что у вложения есть ID
+                if (!attachment.id) {
+                    console.warn('Вложение без ID:', attachment);
+                    // Если ID отсутствует, создаем неактивную ссылку
+                    link.className += ' disabled';
+                    link.title = 'Вложение недоступно';
+                } else {
+                    // Если ID есть, устанавливаем для скачивания
+                    link.dataset.attachmentId = attachment.id;
                     
-                    try {
-                        // Показываем уведомление о начале загрузки
-                        this.showToast('Загрузка вложения...', 'info');
+                    // Добавляем обработчик клика для скачивания
+                    link.addEventListener('click', async (e) => {
+                        e.preventDefault();
                         
-                        // Получаем ID вложения из data-атрибута
-                        const attachmentId = e.currentTarget.dataset.attachmentId;
-                        
-                        // Вызываем метод API для скачивания вложения
-                        const blob = await this.app.api.downloadAttachment(attachmentId);
-                        
-                        // Создаем временную ссылку для скачивания Blob
-                        const downloadUrl = window.URL.createObjectURL(blob);
-                        const tempLink = document.createElement('a');
-                        tempLink.href = downloadUrl;
-                        tempLink.download = attachment.name || 'attachment';
-                        
-                        // Добавляем ссылку в DOM, кликаем и удаляем
-                        document.body.appendChild(tempLink);
-                        tempLink.click();
-                        document.body.removeChild(tempLink);
-                        
-                        // Освобождаем объектный URL после использования
-                        setTimeout(() => {
-                            window.URL.revokeObjectURL(downloadUrl);
-                        }, 100);
-                        
-                        // Показываем уведомление об успешной загрузке
-                        this.showToast('Вложение успешно загружено', 'success');
-                    } catch (error) {
-                        console.error('Ошибка при скачивании вложения:', error);
-                        this.showToast('Ошибка при скачивании вложения: ' + error.message, 'error');
-                    }
-                });
+                        try {
+                            // Показываем уведомление о начале загрузки
+                            this.showToast('Загрузка вложения...', 'info');
+                            
+                            // Получаем ID вложения из data-атрибута
+                            const attachmentId = e.currentTarget.dataset.attachmentId;
+                            console.log('Попытка скачать вложение с ID:', attachmentId);
+                            console.log('Данные вложения:', attachment);
+                            
+                            if (!attachmentId) {
+                                throw new Error('ID вложения не определен');
+                            }
+                            
+                            // Вызываем метод API для скачивания вложения
+                            const blob = await this.app.api.downloadAttachment(attachmentId);
+                            
+                            if (!blob || blob.size === 0) {
+                                throw new Error('Получен пустой файл');
+                            }
+                            
+                            console.log('Вложение успешно загружено, размер:', blob.size, 'тип:', blob.type);
+                            
+                            // Создаем временную ссылку для скачивания Blob
+                            const downloadUrl = window.URL.createObjectURL(blob);
+                            const tempLink = document.createElement('a');
+                            tempLink.href = downloadUrl;
+                            tempLink.download = attachment.name || 'attachment';
+                            
+                            // Добавляем ссылку в DOM, кликаем и удаляем
+                            document.body.appendChild(tempLink);
+                            tempLink.click();
+                            document.body.removeChild(tempLink);
+                            
+                            // Освобождаем объектный URL после использования
+                            setTimeout(() => {
+                                window.URL.revokeObjectURL(downloadUrl);
+                            }, 100);
+                            
+                            // Показываем уведомление об успешной загрузке
+                            this.showToast('Вложение успешно загружено', 'success');
+                        } catch (error) {
+                            console.error('Ошибка при скачивании вложения:', error);
+                            this.showToast('Ошибка при скачивании вложения: ' + error.message, 'error');
+                        }
+                    });
+                }
                 
                 // Иконка в зависимости от типа файла
                 const icon = document.createElement('i');

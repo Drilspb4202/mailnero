@@ -691,10 +691,20 @@ class MailSlurpApi {
                 
                 // Добавляем дополнительную информацию для отображения и скачивания
                 email.attachments = email.attachments.map(attachment => {
+                    // Проверяем наличие ID вложения
+                    if (!attachment.id) {
+                        console.warn('Вложение без ID:', attachment);
+                        return attachment;
+                    }
+                    
+                    console.log('Обработка вложения:', attachment.id, attachment.name);
+                    
                     return {
                         ...attachment,
                         // Добавляем URL для скачивания вложения
                         downloadUrl: `${this.baseUrl}/attachments/${attachment.id}?apiKey=${this.apiKey}`,
+                        // Убеждаемся, что ID доступен для дальнейшей обработки
+                        id: attachment.id
                     };
                 });
             }
@@ -715,26 +725,101 @@ class MailSlurpApi {
         try {
             console.log('Скачивание вложения с ID:', attachmentId);
             
-            // Повторяем запрос с повторными попытками
+            // В документации MailSlurp API рекомендуется использовать параметр apiKey в URL
+            // а не в заголовке для некоторых запросов, особенно связанных с бинарными данными
+            try {
+                return await this.withRetry(async () => {
+                    const url = `${this.baseUrl}/attachments/${attachmentId}?apiKey=${this.apiKey}`;
+                    console.log('URL запроса вложения:', url);
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': '*/*'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        console.error(`Ошибка API при скачивании вложения: ${response.status} ${response.statusText}`);
+                        throw new Error(`Ошибка при скачивании вложения: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // Возвращаем данные как Blob для скачивания
+                    return await response.blob();
+                });
+            } catch (primaryError) {
+                console.warn('Основной метод скачивания не сработал, пробую альтернативный:', primaryError);
+                // Если основной метод не сработал, пробуем альтернативный
+                return await this.downloadAttachmentAlternative(attachmentId);
+            }
+        } catch (error) {
+            console.error('Ошибка при скачивании вложения:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Скачать вложение по ID (альтернативный метод)
+     * @param {string} attachmentId - ID вложения
+     * @returns {Promise<Blob>} - Данные вложения в формате Blob
+     */
+    async downloadAttachmentAlternative(attachmentId) {
+        try {
+            console.log('Скачивание вложения альтернативным методом, ID:', attachmentId);
+            
+            // Используем другой формат запроса, который может работать в некоторых случаях
             return await this.withRetry(async () => {
-                const response = await fetch(`${this.baseUrl}/attachments/${attachmentId}`, {
+                // Получаем подробную информацию о вложении
+                const attachmentInfoResponse = await fetch(`${this.baseUrl}/attachments/${attachmentId}/metadata?apiKey=${this.apiKey}`, {
                     method: 'GET',
                     headers: {
-                        'x-api-key': this.apiKey,
-                        'Accept': '*/*'
+                        'Accept': 'application/json'
                     }
                 });
                 
-                if (!response.ok) {
-                    console.error(`Ошибка API при скачивании вложения: ${response.status} ${response.statusText}`);
-                    throw new Error(`Ошибка при скачивании вложения: ${response.status} ${response.statusText}`);
+                if (!attachmentInfoResponse.ok) {
+                    console.error(`Ошибка при получении информации о вложении: ${attachmentInfoResponse.status}`);
+                    throw new Error(`Не удалось получить информацию о вложении: ${attachmentInfoResponse.status}`);
                 }
                 
-                // Возвращаем данные как Blob для скачивания
-                return await response.blob();
+                const attachmentInfo = await attachmentInfoResponse.json();
+                console.log('Информация о вложении:', attachmentInfo);
+                
+                // Пробуем получить содержимое вложения через другой эндпоинт
+                const contentResponse = await fetch(`${this.baseUrl}/attachments/${attachmentId}/base64?apiKey=${this.apiKey}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!contentResponse.ok) {
+                    console.error(`Ошибка при получении содержимого вложения: ${contentResponse.status}`);
+                    throw new Error(`Не удалось получить содержимое вложения: ${contentResponse.status}`);
+                }
+                
+                const contentData = await contentResponse.json();
+                
+                // Если есть base64 данные, преобразуем их в Blob
+                if (contentData && contentData.base64FileContents) {
+                    const base64Data = contentData.base64FileContents;
+                    const binaryString = window.atob(base64Data);
+                    const bytes = new Uint8Array(binaryString.length);
+                    
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    // Создаем Blob из байтов
+                    return new Blob([bytes], { 
+                        type: attachmentInfo.contentType || 'application/octet-stream' 
+                    });
+                } else {
+                    throw new Error('Не удалось получить содержимое вложения в формате base64');
+                }
             });
         } catch (error) {
-            console.error('Ошибка при скачивании вложения:', error);
+            console.error('Ошибка при скачивании вложения альтернативным методом:', error);
             throw error;
         }
     }

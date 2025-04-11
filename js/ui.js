@@ -1735,25 +1735,27 @@ class MailSlurpUI {
         
         // Если есть вложения, добавляем их
         if (email.attachments && email.attachments.length > 0) {
-            // Добавляем секцию вложений
-            const emailBody = document.getElementById('email-body');
+            // Создаем секцию для вложений
+            const attachmentsSection = document.createElement('div');
+            attachmentsSection.className = 'email-attachments';
             
-            // Создаем контейнер для вложений
-            const attachmentsContainer = document.createElement('div');
-            attachmentsContainer.className = 'email-attachments';
-            
-            // Добавляем заголовок
             const attachmentsHeader = document.createElement('h4');
-            attachmentsHeader.textContent = 'Вложения:';
-            attachmentsContainer.appendChild(attachmentsHeader);
+            attachmentsHeader.textContent = 'Вложения';
+            attachmentsSection.appendChild(attachmentsHeader);
             
-            // Добавляем список вложений
-            const attachmentsList = document.createElement('ul');
+            const attachmentsList = document.createElement('div');
             attachmentsList.className = 'attachments-list';
             
             email.attachments.forEach(attachment => {
-                const item = document.createElement('li');
-                item.className = 'attachment-item';
+                console.log('Обработка вложения для отображения:', attachment);
+                
+                // Получаем имя файла и размер вложения
+                const filename = attachment.name || attachment.filename || 'Без имени';
+                const size = this.formatFileSize(attachment.size || 0);
+                
+                // Создаем элемент вложения
+                const attachmentItem = document.createElement('div');
+                attachmentItem.className = 'attachment-item';
                 
                 // Создаем кнопку для скачивания вместо обычной ссылки
                 const link = document.createElement('a');
@@ -1775,102 +1777,74 @@ class MailSlurpUI {
                         e.preventDefault();
                         
                         try {
-                            // Показываем уведомление о начале загрузки
-                            this.showToast('Загрузка вложения...', 'info');
-                            
                             // Получаем ID вложения из data-атрибута
                             const attachmentId = e.currentTarget.dataset.attachmentId;
                             console.log('Попытка скачать вложение с ID:', attachmentId);
                             console.log('Данные вложения:', attachment);
                             
-                            if (!attachmentId) {
-                                throw new Error('ID вложения не определен');
-                            }
-                            
-                            // Вызываем метод API для скачивания вложения
-                            const blob = await this.app.api.downloadAttachment(attachmentId);
-                            
-                            if (!blob || blob.size === 0) {
-                                throw new Error('Получен пустой файл');
-                            }
-                            
-                            console.log('Вложение успешно загружено, размер:', blob.size, 'тип:', blob.type);
-                            
-                            // Создаем временную ссылку для скачивания Blob
-                            const downloadUrl = window.URL.createObjectURL(blob);
-                            const tempLink = document.createElement('a');
-                            tempLink.href = downloadUrl;
-                            tempLink.download = attachment.name || 'attachment';
-                            
-                            // Добавляем ссылку в DOM, кликаем и удаляем
-                            document.body.appendChild(tempLink);
-                            tempLink.click();
-                            document.body.removeChild(tempLink);
-                            
-                            // Освобождаем объектный URL после использования
-                            setTimeout(() => {
-                                window.URL.revokeObjectURL(downloadUrl);
-                            }, 100);
-                            
-                            // Показываем уведомление об успешной загрузке
-                            this.showToast('Вложение успешно загружено', 'success');
+                            await this.handleAttachmentDownload(attachmentId, filename, attachment);
                         } catch (error) {
                             console.error('Ошибка при скачивании вложения:', error);
-                            this.showToast('Ошибка при скачивании вложения: ' + error.message, 'error');
+                            this.showToast(`Ошибка при скачивании вложения: ${error.message}`, 'error');
                         }
                     });
                 }
                 
-                // Иконка в зависимости от типа файла
+                // Иконка для типа файла
                 const icon = document.createElement('i');
                 icon.className = 'fas fa-file';
-                
-                // Определяем тип файла по расширению
-                const fileExtension = (attachment.name || '').split('.').pop().toLowerCase();
-                
-                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(fileExtension)) {
-                    icon.className = 'fas fa-file-image';
-                } else if (['pdf'].includes(fileExtension)) {
-                    icon.className = 'fas fa-file-pdf';
-                } else if (['doc', 'docx'].includes(fileExtension)) {
-                    icon.className = 'fas fa-file-word';
-                } else if (['xls', 'xlsx'].includes(fileExtension)) {
-                    icon.className = 'fas fa-file-excel';
-                } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(fileExtension)) {
-                    icon.className = 'fas fa-file-archive';
-                } else if (['txt', 'md'].includes(fileExtension)) {
-                    icon.className = 'fas fa-file-alt';
-                } else if (['html', 'htm', 'xml', 'json', 'js', 'css'].includes(fileExtension)) {
-                    icon.className = 'fas fa-file-code';
+                // Можно определить тип файла по расширению и добавить соответствующую иконку
+                const fileExtension = (filename.split('.').pop() || '').toLowerCase();
+                if (fileExtension) {
+                    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-image';
+                    } else if (['pdf'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-pdf';
+                    } else if (['doc', 'docx', 'odt', 'rtf'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-word';
+                    } else if (['xls', 'xlsx', 'ods'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-excel';
+                    } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-archive';
+                    } else if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-audio';
+                    } else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-video';
+                    } else if (['html', 'htm', 'css', 'js', 'php', 'py', 'java', 'cpp'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-code';
+                    } else if (['ppt', 'pptx', 'odp'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-powerpoint';
+                    } else if (['txt', 'md'].includes(fileExtension)) {
+                        icon.className = 'fas fa-file-alt';
+                    }
                 }
-                
                 link.appendChild(icon);
                 
-                // Добавляем название файла
-                const fileName = document.createElement('span');
-                fileName.textContent = attachment.name || 'Без имени';
-                link.appendChild(fileName);
+                // Имя файла
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = filename;
+                link.appendChild(nameSpan);
                 
-                // Добавляем размер файла, если есть
-                if (attachment.size) {
-                    const fileSize = document.createElement('span');
-                    fileSize.className = 'attachment-size';
-                    fileSize.textContent = this.formatFileSize(attachment.size);
-                    link.appendChild(fileSize);
-                }
+                // Размер файла
+                const sizeSpan = document.createElement('span');
+                sizeSpan.className = 'attachment-size';
+                sizeSpan.textContent = size;
+                link.appendChild(sizeSpan);
                 
-                // Добавляем кнопку загрузки
-                const downloadButton = document.createElement('span');
+                // Кнопка скачивания
+                const downloadButton = document.createElement('div');
                 downloadButton.className = 'download-button';
                 downloadButton.innerHTML = '<i class="fas fa-download"></i>';
                 link.appendChild(downloadButton);
                 
-                item.appendChild(link);
-                attachmentsList.appendChild(item);
+                attachmentItem.appendChild(link);
+                attachmentsList.appendChild(attachmentItem);
             });
             
-            attachmentsContainer.appendChild(attachmentsList);
-            emailBody.appendChild(attachmentsContainer);
+            attachmentsSection.appendChild(attachmentsList);
+            
+            // Добавляем секцию вложений в контейнер содержимого письма
+            this.emailBody.appendChild(attachmentsSection);
         }
     }
     
@@ -1887,6 +1861,82 @@ class MailSlurpUI {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    /**
+     * Обрабатывает скачивание вложения и сохранение на устройство пользователя
+     * @param {string} attachmentId - ID вложения
+     * @param {string} filename - Имя файла вложения
+     * @param {Object} attachment - Полный объект вложения
+     * @returns {Promise<void>}
+     */
+    async handleAttachmentDownload(attachmentId, filename, attachment) {
+        try {
+            if (!attachmentId) {
+                throw new Error('ID вложения не определен');
+            }
+            
+            console.log('Начало скачивания вложения:', attachmentId, filename);
+            console.log('Данные вложения:', attachment);
+            
+            // Показываем индикатор загрузки
+            this.showToast('Загрузка вложения...', 'info');
+            
+            // Если есть прямая ссылка на скачивание, попробуем использовать её
+            if (attachment.downloadUrl) {
+                try {
+                    console.log('Пробуем скачать напрямую по URL:', attachment.downloadUrl);
+                    
+                    // Создаем ссылку для скачивания
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = attachment.downloadUrl;
+                    downloadLink.download = filename || 'attachment';
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                    
+                    // Имитируем клик для начала скачивания
+                    downloadLink.click();
+                    
+                    // Удаляем ссылку
+                    setTimeout(() => {
+                        document.body.removeChild(downloadLink);
+                    }, 100);
+                    
+                    this.showToast('Вложение успешно скачано', 'success');
+                    return;
+                } catch (directError) {
+                    console.warn('Не удалось скачать напрямую по URL:', directError);
+                    // Если не удалось скачать напрямую, продолжаем обычным способом
+                }
+            }
+            
+            // Скачиваем вложение через API
+            const blob = await this.app.api.downloadAttachment(attachmentId);
+            
+            // Создаем URL объекта Blob
+            const url = window.URL.createObjectURL(blob);
+            
+            // Создаем ссылку для скачивания
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename || 'attachment';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            
+            // Имитируем клик для начала скачивания
+            a.click();
+            
+            // Освобождаем URL объекта Blob
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
+            
+            this.showToast('Вложение успешно скачано', 'success');
+        } catch (error) {
+            console.error('Ошибка при скачивании вложения:', error);
+            this.showToast(`Ошибка при скачивании вложения: ${error.message}`, 'error');
+        }
     }
 }
 

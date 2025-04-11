@@ -692,19 +692,35 @@ class MailSlurpApi {
                 // Добавляем дополнительную информацию для отображения и скачивания
                 email.attachments = email.attachments.map(attachment => {
                     // Проверяем наличие ID вложения
-                    if (!attachment.id) {
-                        console.warn('Вложение без ID:', attachment);
-                        return attachment;
+                    if (!attachment.id && attachment.attachmentId) {
+                        // Иногда API возвращает ID вложения в поле attachmentId вместо id
+                        attachment.id = attachment.attachmentId;
+                        console.log('Исправлено: ID вложения взят из attachmentId:', attachment.id);
                     }
                     
-                    console.log('Обработка вложения:', attachment.id, attachment.name);
+                    if (!attachment.id) {
+                        console.warn('Вложение без ID:', attachment);
+                        
+                        // Если есть другие поля, которые могут содержать ID
+                        if (attachment.contentId) {
+                            attachment.id = attachment.contentId;
+                            console.log('Используем contentId как ID вложения:', attachment.id);
+                        }
+                    } else {
+                        console.log('Обработка вложения:', attachment.id, attachment.name || attachment.filename);
+                    }
+                    
+                    // Проверяем наличие имени файла
+                    if (!attachment.name && attachment.filename) {
+                        attachment.name = attachment.filename;
+                    }
                     
                     return {
                         ...attachment,
                         // Добавляем URL для скачивания вложения
-                        downloadUrl: `${this.baseUrl}/attachments/${attachment.id}?apiKey=${this.apiKey}`,
+                        downloadUrl: attachment.id ? `${this.baseUrl}/attachments/${attachment.id}?apiKey=${this.apiKey}` : null,
                         // Убеждаемся, что ID доступен для дальнейшей обработки
-                        id: attachment.id
+                        id: attachment.id || attachment.attachmentId || attachment.contentId || null
                     };
                 });
             }
@@ -725,12 +741,24 @@ class MailSlurpApi {
         try {
             console.log('Скачивание вложения с ID:', attachmentId);
             
-            // В документации MailSlurp API рекомендуется использовать параметр apiKey в URL
-            // а не в заголовке для некоторых запросов, особенно связанных с бинарными данными
-            try {
-                return await this.withRetry(async () => {
-                    const url = `${this.baseUrl}/attachments/${attachmentId}?apiKey=${this.apiKey}`;
-                    console.log('URL запроса вложения:', url);
+            if (!attachmentId) {
+                throw new Error('ID вложения не определен');
+            }
+            
+            // Массив эндпоинтов для попытки скачивания
+            const endpoints = [
+                `/attachments/${attachmentId}?apiKey=${this.apiKey}`,
+                `/attachments/${attachmentId}/download?apiKey=${this.apiKey}`,
+                `/attachments/${attachmentId}/bytes?apiKey=${this.apiKey}`
+            ];
+            
+            // Пробуем каждый эндпоинт по очереди
+            let lastError = null;
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const url = `${this.baseUrl}${endpoint}`;
+                    console.log('Пробуем скачать вложение по URL:', url);
                     
                     const response = await fetch(url, {
                         method: 'GET',
@@ -739,53 +767,21 @@ class MailSlurpApi {
                         }
                     });
                     
-                    if (!response.ok) {
-                        console.error(`Ошибка API при скачивании вложения: ${response.status} ${response.statusText}`);
-                        throw new Error(`Ошибка при скачивании вложения: ${response.status} ${response.statusText}`);
+                    if (response.ok) {
+                        console.log(`Успешно скачано вложение через эндпоинт: ${endpoint}`);
+                        return await response.blob();
+                    } else {
+                        console.warn(`Не удалось скачать через ${endpoint}, статус: ${response.status}`);
                     }
-                    
-                    // Возвращаем данные как Blob для скачивания
-                    return await response.blob();
-                });
-            } catch (primaryError) {
-                console.warn('Основной метод скачивания не сработал, пробую альтернативный:', primaryError);
-                // Если основной метод не сработал, пробуем альтернативный
-                return await this.downloadAttachmentAlternative(attachmentId);
-            }
-        } catch (error) {
-            console.error('Ошибка при скачивании вложения:', error);
-            throw error;
-        }
-    }
-    
-    /**
-     * Скачать вложение по ID (альтернативный метод)
-     * @param {string} attachmentId - ID вложения
-     * @returns {Promise<Blob>} - Данные вложения в формате Blob
-     */
-    async downloadAttachmentAlternative(attachmentId) {
-        try {
-            console.log('Скачивание вложения альтернативным методом, ID:', attachmentId);
-            
-            // Используем другой формат запроса, который может работать в некоторых случаях
-            return await this.withRetry(async () => {
-                // Получаем подробную информацию о вложении
-                const attachmentInfoResponse = await fetch(`${this.baseUrl}/attachments/${attachmentId}/metadata?apiKey=${this.apiKey}`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (!attachmentInfoResponse.ok) {
-                    console.error(`Ошибка при получении информации о вложении: ${attachmentInfoResponse.status}`);
-                    throw new Error(`Не удалось получить информацию о вложении: ${attachmentInfoResponse.status}`);
+                } catch (error) {
+                    console.warn(`Ошибка при попытке скачать через ${endpoint}:`, error);
+                    lastError = error;
                 }
-                
-                const attachmentInfo = await attachmentInfoResponse.json();
-                console.log('Информация о вложении:', attachmentInfo);
-                
-                // Пробуем получить содержимое вложения через другой эндпоинт
+            }
+            
+            // Если все эндпоинты не сработали, пробуем через base64
+            try {
+                console.log('Пробуем получить содержимое вложения через base64');
                 const contentResponse = await fetch(`${this.baseUrl}/attachments/${attachmentId}/base64?apiKey=${this.apiKey}`, {
                     method: 'GET',
                     headers: {
@@ -793,33 +789,77 @@ class MailSlurpApi {
                     }
                 });
                 
-                if (!contentResponse.ok) {
-                    console.error(`Ошибка при получении содержимого вложения: ${contentResponse.status}`);
-                    throw new Error(`Не удалось получить содержимое вложения: ${contentResponse.status}`);
-                }
-                
-                const contentData = await contentResponse.json();
-                
-                // Если есть base64 данные, преобразуем их в Blob
-                if (contentData && contentData.base64FileContents) {
-                    const base64Data = contentData.base64FileContents;
-                    const binaryString = window.atob(base64Data);
-                    const bytes = new Uint8Array(binaryString.length);
+                if (contentResponse.ok) {
+                    const contentData = await contentResponse.json();
                     
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
+                    // Если есть base64 данные, преобразуем их в Blob
+                    if (contentData && contentData.base64FileContents) {
+                        console.log('Получены base64 данные вложения, преобразуем в Blob');
+                        
+                        // Получаем метаданные для определения типа файла
+                        let contentType = 'application/octet-stream';
+                        try {
+                            const metadata = await this.getAttachmentMetadata(attachmentId);
+                            if (metadata && metadata.contentType) {
+                                contentType = metadata.contentType;
+                            }
+                        } catch (metaError) {
+                            console.warn('Не удалось получить метаданные вложения:', metaError);
+                        }
+                        
+                        // Декодируем base64 в бинарные данные
+                        const base64Data = contentData.base64FileContents;
+                        const binaryString = window.atob(base64Data);
+                        const bytes = new Uint8Array(binaryString.length);
+                        
+                        for (let i = 0; i < binaryString.length; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        
+                        // Создаем Blob из байтов
+                        return new Blob([bytes], { type: contentType });
                     }
-                    
-                    // Создаем Blob из байтов
-                    return new Blob([bytes], { 
-                        type: attachmentInfo.contentType || 'application/octet-stream' 
-                    });
-                } else {
-                    throw new Error('Не удалось получить содержимое вложения в формате base64');
+                }
+            } catch (base64Error) {
+                console.warn('Ошибка при получении base64 данных:', base64Error);
+                lastError = base64Error;
+            }
+            
+            // Если все методы не сработали, выбрасываем исключение
+            throw new Error(lastError ? lastError.message : 'Не удалось скачать вложение ни одним из доступных методов');
+        } catch (error) {
+            console.error('Ошибка при скачивании вложения:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Получить метаданные вложения
+     * @param {string} attachmentId - ID вложения
+     * @returns {Promise<Object>} - Метаданные вложения
+     */
+    async getAttachmentMetadata(attachmentId) {
+        if (!attachmentId) {
+            throw new Error('ID вложения не определен');
+        }
+        
+        try {
+            const url = `${this.baseUrl}/attachments/${attachmentId}/metadata?apiKey=${this.apiKey}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error(`Ошибка при получении метаданных вложения: ${response.status}`);
+            }
+            
+            return await response.json();
         } catch (error) {
-            console.error('Ошибка при скачивании вложения альтернативным методом:', error);
+            console.error('Ошибка при получении метаданных вложения:', error);
             throw error;
         }
     }
@@ -1167,6 +1207,20 @@ class MailSlurpApi {
             console.error('Ошибка при пометке письма как прочитанного:', error);
             return false;
         }
+    }
+
+    /**
+     * Получить прямой URL для скачивания вложения
+     * @param {string} attachmentId - ID вложения
+     * @returns {string} - URL для скачивания
+     */
+    getAttachmentDownloadUrl(attachmentId) {
+        if (!attachmentId) {
+            console.warn('Попытка получить URL вложения без ID');
+            return null;
+        }
+        
+        return `${this.baseUrl}/attachments/${attachmentId}/download?apiKey=${this.apiKey}`;
     }
 }
 

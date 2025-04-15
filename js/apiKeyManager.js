@@ -190,7 +190,7 @@ class ApiKeyManager {
         // Если ключ не активирован, пробуем активировать текущий ключ
         if (!this.currentUserKey || !this.apiKeys[this.currentUserKey]) {
             // Пробуем получить ключ из localStorage или использовать дефолтный
-            const apiKey = localStorage.getItem('mailslurp_api_key') || 'fac5b6d2020a14edc74b54e9f1b09513df1c2ca3fc1901ec9e5933df11052d5a';
+            const apiKey = localStorage.getItem('mailslurp_api_key') || 'f5c0764527f6f98d3e8ca7e23cdb2ae57093743f834dd3c575ccb23c22207f2a';
             
             try {
                 // Пытаемся активировать ключ автоматически
@@ -317,7 +317,7 @@ class ApiKeyManager {
         // Если ключ не активирован, пробуем активировать текущий ключ
         if (!this.currentUserKey || !this.apiKeys[this.currentUserKey]) {
             // Пробуем получить ключ из localStorage или использовать дефолтный
-            const apiKey = localStorage.getItem('mailslurp_api_key') || 'fac5b6d2020a14edc74b54e9f1b09513df1c2ca3fc1901ec9e5933df11052d5a';
+            const apiKey = localStorage.getItem('mailslurp_api_key') || 'f5c0764527f6f98d3e8ca7e23cdb2ae57093743f834dd3c575ccb23c22207f2a';
             
             try {
                 // Пытаемся активировать ключ автоматически

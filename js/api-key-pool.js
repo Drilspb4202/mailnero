@@ -6,38 +6,45 @@ class ApiKeyPool {
         // Пул публичных API ключей
         this.publicKeys = [
             {
-                key: '313900549c3e27b57d58ffd9d0e6dbde0c0db9d972e5ff7f26812c567c7beefc',
+                key: 'f5c0764527f6f98d3e8ca7e23cdb2ae57093743f834dd3c575ccb23c22207f2a',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: 'cfc00cab6dbea7c39ee1e70ec7d45b1b8ce81b9abf12075e88f1e3bc41959473',
+                key: 'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '',
+                key: '8f47bef8ce382ea4f5809ab705020a5658586b84e1308a84644e197647ceef8f',
                 usageCount: 0,
                 lastUsed: null,
-                isExhausted: true,
+                isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '',
+                key: '5083ac0e5cb4bb411da164c1da9e8d9c1efb7c26d5ccdaf8cc0cc64691903055',
                 usageCount: 0,
                 lastUsed: null,
-                isExhausted: true,
+                isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '',
+                key: '2543594a13e9bb72ae82d959ac68990f812e53bd50b247ca564d8baf3082d2d7',
                 usageCount: 0,
                 lastUsed: null,
-                isExhausted: true,
+                isExhausted: false,
+                monthlyReset: new Date().getTime()
+            },
+            {
+                key: '3a71d464318fc53a706bd14bc99928159dfd0a0b63d9f854d2b25fa3e821301f',
+                usageCount: 0,
+                lastUsed: null,
+                isExhausted: false,
                 monthlyReset: new Date().getTime()
             }
         ];

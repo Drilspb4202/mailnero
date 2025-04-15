@@ -312,21 +312,19 @@
                         <div class="settings-group">
                             <h3 data-i18n="settings_api"><i class="fas fa-key"></i> API ключ</h3>
                             
-                            <!-- Улучшенный блок для выбора типа API и отображения статуса -->
-                            <div class="api-mode-selector">
+                            <!-- Настройки API -->
+                            <div class="form-group">
                                 <div class="api-mode-label" data-i18n="settings_api_mode_label"><i class="fas fa-exchange-alt"></i> Режим API</div>
-                                <div class="api-mode-toggle">
+                                <div class="api-mode-options">
                                     <span class="api-mode-option" id="public-api-option" data-i18n="settings_api_mode_public"><i class="fas fa-globe"></i> Публичный</span>
-                                    <label class="api-mode-switch">
-                                        <input type="checkbox" id="api-mode-toggle">
-                                        <span class="api-mode-slider"></span>
-                                    </label>
+                                    
+                                    <span class="api-mode-separator">|</span>
+                                    
                                     <span class="api-mode-option" id="personal-api-option" data-i18n="settings_api_mode_personal"><i class="fas fa-user-lock"></i> Персональный</span>
-                                </div>
-                                
-                                <div class="api-status-indicator">
-                                    <span class="status-dot" id="api-status-dot"></span>
-                                    <span id="api-status-text" data-i18n="settings_api_status_checking">Проверка соединения...</span>
+                                    
+                                    <span class="api-mode-separator">|</span>
+                                    
+                                    <span class="api-mode-option" id="combined-api-option" data-i18n="settings_api_mode_combined"><i class="fas fa-sync-alt"></i> Комбинированный</span>
                                 </div>
                             </div>
                             
@@ -374,7 +372,7 @@
                                 <label for="auto-delete-inboxes" data-i18n="settings_auto_delete_inboxes">Автоматически удалять почтовые ящики после использования</label>
                             </div>
                             <div class="settings-field checkbox-field">
-                                <input type="checkbox" id="auto-delete-emails">
+                                <input type="checkbox" id="auto-delete-emails" checked>
                                 <label for="auto-delete-emails" data-i18n="settings_auto_delete_emails">Удалять письма старше:</label>
                                 <input type="number" id="auto-delete-days" class="number-input" value="7" min="1">
                                 <span data-i18n="settings_auto_delete_days">дней</span>
@@ -383,11 +381,11 @@
                                 <label data-i18n="settings_inbox_timer"><i class="fas fa-hourglass-half"></i> Таймер удаления ящика после просмотра:</label>
                                 <div class="radio-controls">
                                     <label class="radio-control">
-                                        <input type="radio" name="inbox-delete-timer" value="0" checked>
+                                        <input type="radio" name="inbox-delete-timer" value="0">
                                         <span data-i18n="settings_inbox_timer_never">Не удалять</span>
                                     </label>
                                     <label class="radio-control">
-                                        <input type="radio" name="inbox-delete-timer" value="5">
+                                        <input type="radio" name="inbox-delete-timer" value="5" checked>
                                         <span data-i18n="settings_inbox_timer_5min">Через 5 минут</span>
                                     </label>
                                     <label class="radio-control">

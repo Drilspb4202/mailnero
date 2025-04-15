@@ -14,7 +14,7 @@ class MailSlurpApi {
         this.keyPool.forceRefreshState();
         
         // Защищенный публичный API ключ - берется из пула
-        this.publicApiKey = this.keyPool.getNextAvailableKey() || 'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c';
+        this.publicApiKey = this.keyPool.getNextAvailableKey() || '313900549c3e27b57d58ffd9d0e6dbde0c0db9d972e5ff7f26812c567c7beefc';
         
         // Обновляем также значение в localStorage
         localStorage.setItem('mailslurp_api_key', this.publicApiKey);
@@ -22,33 +22,15 @@ class MailSlurpApi {
         // API ключ пользователя - может быть изменен
         this.personalApiKey = localStorage.getItem('mailslurp_personal_api_key') || '';
         
-        // Флаг, указывающий, какой API используется (public/personal/combined)
-        this.apiMode = localStorage.getItem('api_mode') || 'public';
-        this.usePersonalApi = this.apiMode === 'personal';
-        this.useCombinedApi = this.apiMode === 'combined';
-        
-        // Инициализация массива подписчиков на изменение режима API
-        this.apiModeListeners = [];
+        // Флаг, указывающий, какой API используется (public/personal)
+        this.usePersonalApi = localStorage.getItem('use_personal_api') === 'true';
         
         // Устанавливаем активный API ключ
-        if (this.apiMode === 'personal' && !this.personalApiKey) {
-            // Если режим персональный, но ключ не задан, используем публичный
-            this.setPersonalApiKey('use_public_key');
-            this.apiKey = this.personalApiKey;
-        } else if (this.apiMode === 'personal' && this.personalApiKey) {
-            this.apiKey = this.personalApiKey;
-        } else if (this.apiMode === 'combined' && !this.personalApiKey) {
-            // Если режим комбинированный, но персональный ключ не задан, используем публичный
-            this.setPersonalApiKey('use_public_key');
-            // В комбинированном режиме начинаем с публичного ключа
-            this.apiKey = this.publicApiKey;
-        } else {
-            this.apiKey = this.publicApiKey;
-        }
+        this.apiKey = this.usePersonalApi && this.personalApiKey ? this.personalApiKey : this.publicApiKey;
         
         this.baseUrl = 'https://api.mailslurp.com';
-        this.emailWaitTimeout = parseInt(localStorage.getItem('mailslurp_email_wait_timeout') || '60');
-        this.httpTimeout = parseInt(localStorage.getItem('mailslurp_http_timeout') || '30');
+        this.emailWaitTimeout = parseInt(localStorage.getItem('mailslurp_email_wait_timeout') || '30');
+        this.httpTimeout = parseInt(localStorage.getItem('mailslurp_http_timeout') || '10');
         
         // Настройки для повторных попыток
         this.maxRetries = 3;
@@ -69,7 +51,7 @@ class MailSlurpApi {
         // Обновляем статус соединения
         this.connectionStatus = {
             isConnected: false,
-            apiType: this.apiMode,
+            apiType: this.usePersonalApi ? 'personal' : 'public',
             lastChecked: null
         };
         
@@ -131,7 +113,7 @@ class MailSlurpApi {
             
             this.connectionStatus = {
                 isConnected: true,
-                apiType: this.apiMode,
+                apiType: this.usePersonalApi ? 'personal' : 'public',
                 lastChecked: new Date(),
                 data: status
             };
@@ -146,7 +128,7 @@ class MailSlurpApi {
         } catch (error) {
             this.connectionStatus = {
                 isConnected: false,
-                apiType: this.apiMode,
+                apiType: this.usePersonalApi ? 'personal' : 'public',
                 lastChecked: new Date(),
                 error: error.message
             };
@@ -162,47 +144,46 @@ class MailSlurpApi {
     }
 
     /**
-     * Переключить режим API между публичным и персональным
-     * @param {string} mode - 'public', 'personal' или 'combined'
+     * Переключение между публичным и персональным API
+     * @param {boolean} usePersonal - Использовать персональный API
+     * @returns {Object} - Статус переключения
      */
-    switchApiMode(mode) {
-        console.log('Переключение режима API на:', mode);
-        
-        // Проверяем, есть ли персональный ключ, если выбран personal или combined режим
-        if ((mode === 'personal' || mode === 'combined') && !this.personalApiKey) {
-            console.log('Персональный API ключ не задан, используем публичный ключ как персональный');
-            this.setPersonalApiKey('use_public_key');
+    switchApiMode(usePersonal) {
+        if (usePersonal && !this.personalApiKey) {
+            throw new Error('Персональный API-ключ не установлен. Пожалуйста, установите ключ перед переключением.');
         }
         
-        // Сохраняем режим в localStorage
-        localStorage.setItem('api_mode', mode);
+        this.usePersonalApi = usePersonal;
+        localStorage.setItem('use_personal_api', usePersonal.toString());
         
-        // Устанавливаем режим API
-        this.apiMode = mode;
+        // Обновляем активный API ключ
+        this.apiKey = usePersonal ? this.personalApiKey : this.publicApiKey;
         
-        if (mode === 'public') {
-            this.usePersonalApi = false;
-            this.apiKey = this.publicApiKey;
-        } else if (mode === 'personal') {
-            this.usePersonalApi = true;
-            this.apiKey = this.personalApiKey;
-        } else if (mode === 'combined') {
-            // В комбинированном режиме начинаем с публичного API
-            this.usePersonalApi = false;
-            this.apiKey = this.publicApiKey;
+        // Активируем ключ в менеджере
+        try {
+            this.keyManager.activateKey(this.apiKey);
+            console.log(`Успешное переключение на ${usePersonal ? 'персональный' : 'публичный'} API`);
+            
+            // Проверяем статус нового подключения
+            this.checkConnection();
+            
+            return {
+                success: true,
+                mode: usePersonal ? 'personal' : 'public'
+            };
+        } catch (error) {
+            console.error('Ошибка при переключении API режима:', error);
+            
+            // Возвращаем обратно на публичный API в случае ошибки
+            if (usePersonal) {
+                this.usePersonalApi = false;
+                localStorage.setItem('use_personal_api', 'false');
+                this.apiKey = this.publicApiKey;
+                this.keyManager.activateKey(this.apiKey);
+            }
+            
+            throw error;
         }
-        
-        // Пересоздаем экземпляр API клиента
-        this._setupApiClient();
-        
-        // Обновляем состояние переключателя на странице
-        const apiModeSwitch = document.querySelector('.api-mode-switch');
-        if (apiModeSwitch) {
-            apiModeSwitch.setAttribute('data-mode', mode);
-        }
-        
-        // Уведомляем всех подписчиков об изменении режима API
-        this.apiModeListeners.forEach(listener => listener(mode));
     }
 
     /**
@@ -211,7 +192,7 @@ class MailSlurpApi {
      */
     getCurrentApiMode() {
         return {
-            mode: this.apiMode,
+            mode: this.usePersonalApi ? 'personal' : 'public',
             apiKey: this.apiKey,
             connectionStatus: this.connectionStatus
         };
@@ -222,11 +203,6 @@ class MailSlurpApi {
      * @param {string} apiKey - Персональный API ключ MailSlurp
      */
     setPersonalApiKey(apiKey) {
-        // Если указано специальное значение 'use_public_key', используем публичный ключ
-        if (apiKey === 'use_public_key') {
-            apiKey = this.publicApiKey;
-        }
-        
         this.personalApiKey = apiKey;
         localStorage.setItem('mailslurp_personal_api_key', apiKey);
         
@@ -240,7 +216,7 @@ class MailSlurpApi {
             } catch (error) {
                 console.warn('Не удалось активировать персональный API-ключ:', error);
                 // Переключаемся обратно на публичный API
-                this.switchApiMode('public');
+                this.switchApiMode(false);
                 throw error;
             }
         }
@@ -258,7 +234,7 @@ class MailSlurpApi {
         // Переключаемся на персональный API
         if (apiKey) {
             try {
-                this.switchApiMode('personal');
+                this.switchApiMode(true);
             } catch (error) {
                 console.warn('Не удалось переключиться на персональный API:', error);
             }
@@ -472,12 +448,9 @@ class MailSlurpApi {
                 const updatedInboxes = await this.getInboxes();
                 this.keyManager.updateInboxCount(updatedInboxes);
                 
-                // Проверяем настройки автоудаления из localStorage
-                const autoDeleteInboxes = localStorage.getItem('mailslurp_auto_delete_inboxes') === 'true';
-                
-                // Если включено автоудаление ящиков или используется публичный API без активации секретного кода
-                if ((autoDeleteInboxes || (!this.usePersonalApi && !this.secretCodeActivated)) && newInbox.id) {
-                    console.log(`Автоматическое удаление ящика ${newInbox.id} через 5 минут`);
+                // Если используется публичный API ключ и не активирован секретный код, настраиваем автоудаление
+                if (!this.usePersonalApi && !this.secretCodeActivated && newInbox.id) {
+                    console.log(`Автоматическое удаление ящика ${newInbox.id} через 5 минут (публичный API)`);
                     
                     // Устанавливаем таймер на удаление
                     setTimeout(() => {
@@ -506,24 +479,14 @@ class MailSlurpApi {
             } catch (error) {
                 console.error('Ошибка при создании ящика:', error);
                 
-                // Проверяем, связана ли ошибка с неверным API-ключом или превышением лимита
+                // Проверяем, связана ли ошибка с неверным API-ключом
                 if (error.message && (
                     error.message.includes('User not found for API KEY') ||
                     error.message.includes('not found') ||
                     error.message.includes('invalid') ||
-                    error.message.includes('Invalid API Key') ||
-                    error.message.includes('exceeded') ||
-                    error.message.includes('limit') ||
-                    error.message.includes('Account') ||
-                    error.message.includes('free account') ||
-                    error.message.includes('Action not permitted')
+                    error.message.includes('Invalid API Key')
                 )) {
-                    console.warn('Ошибка с API-ключом или лимитом, пробуем переключиться на другой ключ');
-                    
-                    // Помечаем текущий ключ как исчерпанный
-                    if (!this.usePersonalApi && this.keyPool) {
-                        this.keyPool.markCurrentKeyExhausted();
-                    }
+                    console.warn('Ошибка с API-ключом, пробуем переключиться на другой ключ');
                     
                     // Пытаемся переключиться на рабочий ключ
                     await this.switchToWorkingApiKey();
@@ -568,52 +531,47 @@ class MailSlurpApi {
      */
     async switchToWorkingApiKey() {
         // Принудительно обновляем пул API-ключей
-        if (this.keyPool) {
-            this.keyPool.forceRefreshState();
+        this.keyPool.forceRefreshState();
+        
+        // Устанавливаем новые рабочие ключи
+        const workingKeys = [
+            '313900549c3e27b57d58ffd9d0e6dbde0c0db9d972e5ff7f26812c567c7beefc',
+            'cfc00cab6dbea7c39ee1e70ec7d45b1b8ce81b9abf12075e88f1e3bc41959473'
+        ];
+        
+        // Обновляем ключи в пуле
+        workingKeys.forEach((key, index) => {
+            this.keyPool.updateKey(index, key);
+        });
+        
+        // Получаем новый ключ из пула
+        this.publicApiKey = this.keyPool.getNextAvailableKey();
+        
+        // Если мы используем публичный API, обновляем текущий ключ
+        if (!this.usePersonalApi) {
+            this.apiKey = this.publicApiKey;
             
-            // Получаем новый ключ из пула
-            this.publicApiKey = this.keyPool.getNextAvailableKey();
+            // Обновляем ключ в localStorage
+            localStorage.setItem('mailslurp_api_key', this.publicApiKey);
             
-            // Если мы используем публичный API, обновляем текущий ключ
-            if (!this.usePersonalApi) {
-                this.apiKey = this.publicApiKey;
-                
-                // Обновляем ключ в localStorage
-                localStorage.setItem('mailslurp_api_key', this.publicApiKey);
-                
-                // Активируем ключ в менеджере
-                this.keyManager.activateKey(this.apiKey);
-                
-                // Проверяем статус подключения
-                await this.checkConnection();
-                
-                console.log('Переключились на рабочий API-ключ из пула:', this.publicApiKey);
-                
-                // Уведомляем пользователя
-                const event = new CustomEvent('show-toast', {
-                    detail: {
-                        message: 'Обнаружена проблема с API-ключом, выполнено автоматическое переключение на следующий доступный ключ',
-                        type: 'warning',
-                        duration: 5000
-                    }
-                });
-                document.dispatchEvent(event);
-                
-                return;
-            }
+            // Активируем ключ в менеджере
+            this.keyManager.activateKey(this.apiKey);
+            
+            // Проверяем статус подключения
+            await this.checkConnection();
         }
         
-        // Если пул ключей не доступен или используется личный API, показываем уведомление об ошибке
+        console.log('Переключились на рабочий API-ключ:', this.publicApiKey);
+        
+        // Уведомляем пользователя
         const event = new CustomEvent('show-toast', {
             detail: {
-                message: 'Все API-ключи исчерпаны или недоступны. Пожалуйста, используйте личный API-ключ.',
-                type: 'error',
-                duration: 10000
+                message: 'Обнаружена проблема с API-ключом, выполнено автоматическое переключение на рабочий ключ',
+                type: 'warning',
+                duration: 5000
             }
         });
         document.dispatchEvent(event);
-        
-        console.error('Не удалось найти рабочий API-ключ в пуле');
     }
 
     /**
@@ -622,43 +580,7 @@ class MailSlurpApi {
      * @returns {Promise<Object>} - Результат операции
      */
     async deleteInbox(inboxId) {
-        try {
-            // Сначала получаем и удаляем все письма в ящике
-            console.log(`Удаление ящика ${inboxId} - получаем список писем для удаления...`);
-            const emails = await this.getEmails(inboxId);
-            
-            if (emails && Array.isArray(emails) && emails.length > 0) {
-                console.log(`Найдено ${emails.length} писем для удаления в ящике ${inboxId}`);
-                
-                // Удаляем все письма в ящике последовательно
-                for (const email of emails) {
-                    try {
-                        await this.deleteEmail(email.id);
-                        console.log(`Удалено письмо ${email.id} из ящика ${inboxId}`);
-                    } catch (emailError) {
-                        console.error(`Ошибка при удалении письма ${email.id}:`, emailError);
-                    }
-                }
-            } else {
-                console.log(`В ящике ${inboxId} нет писем для удаления`);
-            }
-            
-            // Теперь удаляем сам ящик
-            console.log(`Удаление ящика ${inboxId}...`);
-            return this.delete(`/inboxes/${inboxId}`);
-        } catch (error) {
-            console.error(`Ошибка при удалении ящика ${inboxId}:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Удалить письмо по ID
-     * @param {string} emailId - ID письма
-     * @returns {Promise<Object>} - Результат операции
-     */
-    async deleteEmail(emailId) {
-        return this.delete(`/emails/${emailId}`);
+        return this.delete(`/inboxes/${inboxId}`);
     }
 
     /**
@@ -680,23 +602,11 @@ class MailSlurpApi {
      * @returns {Promise<Object>} - Полученное письмо
      */
     async waitForLatestEmail(inboxId, unreadOnly = true) {
-        console.log(`Ожидание нового письма для ящика ${inboxId}, timeout: ${this.emailWaitTimeout} секунд`);
-        console.log(`Текущий API ключ: ${this.apiKey.substring(0, 8)}...`);
-        console.log(`Режим API: ${this.apiMode}`);
-        
-        try {
-            const result = await this.get('/waitForLatestEmail', {
-                inboxId,
-                timeout: this.emailWaitTimeout * 1000,
-                unreadOnly: unreadOnly.toString()
-            });
-            
-            console.log('Получено письмо:', result);
-            return result;
-        } catch (error) {
-            console.error(`Ошибка при ожидании письма: ${error.message}`);
-            throw error;
-        }
+        return this.get('/waitForLatestEmail', {
+            inboxId,
+            timeout: this.emailWaitTimeout * 1000,
+            unreadOnly: unreadOnly.toString()
+        });
     }
 
     /**
@@ -948,10 +858,10 @@ class MailSlurpApi {
      * @param {CustomEvent} event - Событие с данными исчерпанного ключа
      */
     handleKeyExhausted(event) {
-        const { newKey, hasAvailableKeys } = event.detail;
-        
-        if (this.apiMode === 'public') {
+        if (!this.usePersonalApi) {
             // Если используется публичный API, переключаемся на новый ключ
+            const { newKey } = event.detail;
+            
             if (newKey) {
                 console.log('Переключение на новый ключ из пула из-за исчерпания лимитов:', newKey);
                 this.publicApiKey = newKey;
@@ -989,102 +899,7 @@ class MailSlurpApi {
                 });
                 document.dispatchEvent(toastEvent);
             }
-        } 
-        else if (this.apiMode === 'combined') {
-            // В комбинированном режиме переключаемся между публичным и персональным
-            if (this.apiKey === this.publicApiKey) {
-                // Если текущий ключ публичный и исчерпан, проверяем наличие других публичных
-                if (newKey) {
-                    // Есть еще публичные ключи, переключаемся на них
-                    console.log('Переключение на следующий публичный ключ в комбинированном режиме:', newKey);
-                    this.publicApiKey = newKey;
-                    this.apiKey = newKey;
-                    
-                    // Активируем новый ключ
-                    this.keyManager.activateKey(this.apiKey);
-                    this.checkConnection();
-                    
-                    const toastEvent = new CustomEvent('show-toast', {
-                        detail: {
-                            message: 'Переключение на следующий публичный ключ API',
-                            type: 'info',
-                            duration: 3000
-                        }
-                    });
-                    document.dispatchEvent(toastEvent);
-                } 
-                else if (this.personalApiKey) {
-                    // Если нет больше публичных, но есть персональный - переключаемся на него
-                    console.log('Все публичные ключи исчерпаны, переключение на персональный ключ');
-                    this.apiKey = this.personalApiKey;
-                    
-                    // Активируем персональный ключ
-                    this.keyManager.activateKey(this.apiKey);
-                    this.checkConnection();
-                    
-                    const toastEvent = new CustomEvent('show-toast', {
-                        detail: {
-                            message: 'Все публичные ключи исчерпаны, переключение на персональный ключ API',
-                            type: 'warning',
-                            duration: 5000
-                        }
-                    });
-                    document.dispatchEvent(toastEvent);
-                }
-                else {
-                    // Если нет ни публичных, ни персонального - сообщаем об ошибке
-                    console.error('Все ключи API исчерпаны! Нет доступных ключей для использования');
-                    
-                    const toastEvent = new CustomEvent('show-toast', {
-                        detail: {
-                            message: 'Все ключи API исчерпаны! Добавьте новые ключи или установите персональный ключ.',
-                            type: 'error',
-                            duration: 10000
-                        }
-                    });
-                    document.dispatchEvent(toastEvent);
-                }
-            }
-            else if (this.apiKey === this.personalApiKey) {
-                // Если текущий ключ персональный и исчерпан, проверяем, есть ли доступные публичные
-                if (hasAvailableKeys) {
-                    // Получаем новый публичный ключ
-                    const nextPublicKey = this.keyPool.getNextAvailableKey();
-                    
-                    if (nextPublicKey) {
-                        console.log('Персональный ключ исчерпан, возвращаемся к публичным ключам');
-                        this.publicApiKey = nextPublicKey;
-                        this.apiKey = nextPublicKey;
-                        
-                        // Активируем публичный ключ
-                        this.keyManager.activateKey(this.apiKey);
-                        this.checkConnection();
-                        
-                        const toastEvent = new CustomEvent('show-toast', {
-                            detail: {
-                                message: 'Персональный ключ исчерпан, возвращаемся к публичным ключам',
-                                type: 'info',
-                                duration: 5000
-                            }
-                        });
-                        document.dispatchEvent(toastEvent);
-                    }
-                } else {
-                    // Если все ключи исчерпаны, сообщаем об ошибке
-                    console.error('Все ключи API исчерпаны! Нет доступных ключей для использования');
-                    
-                    const toastEvent = new CustomEvent('show-toast', {
-                        detail: {
-                            message: 'Все ключи API исчерпаны! Обновите ключи или попробуйте позже.',
-                            type: 'error',
-                            duration: 10000
-                        }
-                    });
-                    document.dispatchEvent(toastEvent);
-                }
-            }
         }
-        // В персональном режиме просто выводим сообщение об ошибке
     }
 
     /**
@@ -1262,25 +1077,6 @@ class MailSlurpApi {
         } catch (error) {
             console.error('Ошибка при пометке письма как прочитанного:', error);
             return false;
-        }
-    }
-
-    /**
-     * Настраивает API клиент после смены режима
-     * @private
-     */
-    _setupApiClient() {
-        // Метод для перенастройки API клиента после смены режима
-        console.log('Перенастройка API клиента. Текущий режим:', this.apiMode);
-        console.log('Текущий ключ:', this.apiKey);
-        
-        // Активируем ключ в менеджере
-        try {
-            this.keyManager.activateKey(this.apiKey);
-            // Проверяем статус соединения
-            this.checkConnection();
-        } catch (error) {
-            console.warn('Ошибка настройки API клиента:', error);
         }
     }
 }

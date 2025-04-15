@@ -1,4 +1,4 @@
-$port = 8080
+$port = 8090
 $folderPath = Get-Location
 
 Write-Host "Запуск сервера на порту $port в директории $folderPath"

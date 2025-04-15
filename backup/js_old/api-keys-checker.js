@@ -79,19 +79,18 @@
         localStorage.removeItem('current_user_key');
         localStorage.removeItem('mailslurp_api_key');
         localStorage.removeItem('use_personal_api');
-        localStorage.removeItem('api_mode');
         
         // Устанавливаем новые работающие ключи
         const apiKeys = [
             {
-                key: 'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c',
+                key: '291bfc5c2846a21115cabdd60c0ea4be1b5884cf08761575cbaff9797a429e2d',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '8f47bef8ce382ea4f5809ab705020a5658586b84e1308a84644e197647ceef8f',
+                key: 'f74ec85c249827e83b58eeab8b15e8d9cc91d2ca5508c5c8b758805756d524b2',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
@@ -108,7 +107,7 @@
         // Обновляем локальное хранилище
         localStorage.setItem('api_key_pool_state', JSON.stringify(newState));
         localStorage.setItem('mailslurp_api_key', apiKeys[0].key);
-        localStorage.setItem('api_mode', 'public');
+        localStorage.setItem('use_personal_api', 'false');
         
         console.log('API-ключи успешно сброшены к новым рабочим ключам');
     }

@@ -3153,154 +3153,67 @@ input:checked + .api-mode-slider {
     animation: pulse-warning 2s infinite;
 }
 
-/* Стили для вложений */
-.email-attachments {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-}
-
-.email-attachments h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 16px;
-    color: #555;
-}
-
-.attachments-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.attachment-item {
-    margin-bottom: 8px;
-}
-
-.attachment-link {
+/* Стили для переключателя режимов API */
+.api-mode-options {
     display: flex;
     align-items: center;
+    background: rgba(15, 11, 33, 0.4);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 15px;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.api-mode-option {
+    flex: 1;
     padding: 8px 12px;
-    background-color: rgba(255, 255, 255, 0.7);
-    border-radius: 4px;
-    text-decoration: none;
-    color: #333;
-    transition: background-color 0.2s, transform 0.1s;
+    text-align: center;
     cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+    position: relative;
+    user-select: none;
 }
 
-.attachment-link:hover {
-    background-color: rgba(255, 255, 255, 0.9);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.api-mode-option i {
+    margin-right: 6px;
+    font-size: 0.9rem;
 }
 
-.attachment-link i {
-    margin-right: 10px;
-    font-size: 18px;
-    color: #666;
+.api-mode-option:hover {
+    color: var(--text-color);
+    background: rgba(138, 43, 226, 0.1);
 }
 
-.attachment-link span {
-    margin-right: 8px;
-}
-
-.attachment-size {
-    color: #888;
-    font-size: 0.8em;
-    margin-left: auto;
-}
-
-.download-button {
-    margin-left: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background-color: #4a90e2;
-    border-radius: 50%;
+.api-mode-option.active {
+    background: var(--gradient-primary);
     color: white;
-    transition: background-color 0.2s;
+    box-shadow: var(--shadow);
+    font-weight: 500;
 }
 
-.download-button i {
-    margin: 0;
-    font-size: 14px;
-    color: white;
+.api-mode-separator {
+    color: var(--border-color);
+    opacity: 0.5;
+    user-select: none;
 }
 
-.attachment-link:hover .download-button {
-    background-color: #3a7bc8;
+/* Стили для опции комбинированного режима */
+#combined-api-option i {
+    animation: spin 4s linear infinite;
 }
 
-/* Стили для iframe и контента почты */
-.email-content-iframe {
-    width: 100%;
-    border: none;
-    background-color: #ffffff;
-    border-radius: 4px;
-    overflow: hidden;
-    min-height: 100px;
-    transition: height 0.3s;
-}
-
-.email-content-loader {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background-color: rgba(255, 255, 255, 0.8);
-    border-radius: 4px;
-}
-
-.email-content-loader::after {
-    content: "";
-    width: 30px;
-    height: 30px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #4a90e2;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-.email-content-text {
-    white-space: pre-wrap;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    padding: 15px;
-    background-color: #ffffff;
-    border-radius: 4px;
-    color: #333;
-    font-size: 14px;
-    line-height: 1.6;
-    overflow-x: auto;
-}
-
-.email-content-error {
-    padding: 15px;
-    background-color: rgba(255, 0, 0, 0.05);
-    border-left: 4px solid #ff5555;
-    color: #ff5555;
-    font-style: italic;
+#combined-api-option.active i {
+    animation: spin 2s linear infinite;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.attachment-link.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: rgba(230, 230, 230, 0.7);
-}
-
-.attachment-link.disabled:hover {
-    transform: none;
-    box-shadow: none;
-}
-
-.attachment-link.disabled .download-button {
-    background-color: #999;
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }

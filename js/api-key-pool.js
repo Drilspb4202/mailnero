@@ -39,6 +39,42 @@ class ApiKeyPool {
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
+            },
+            // Новые API ключи
+            {
+                key: '1918f9f286687184ba1fa19d3a1b0aa00931eaa946ad06e2ef0c2331dcd50797',
+                usageCount: 0,
+                lastUsed: null,
+                isExhausted: false,
+                monthlyReset: new Date().getTime()
+            },
+            {
+                key: '1969bba304be1bdf0214615649eaf8122161507a549ff37439f14fcaaf46b3d2',
+                usageCount: 0,
+                lastUsed: null,
+                isExhausted: false,
+                monthlyReset: new Date().getTime()
+            },
+            {
+                key: '886613277cfc69d9f4f3b66fab7e5def64cf4a3251dd8cb9cb1ec272dbcfb9c7',
+                usageCount: 0,
+                lastUsed: null,
+                isExhausted: false,
+                monthlyReset: new Date().getTime()
+            },
+            {
+                key: '0015bab56d0809fe52010d1c3bf6e6d6b139378edb74f52d8dd7ab095ee90c18',
+                usageCount: 0,
+                lastUsed: null,
+                isExhausted: false,
+                monthlyReset: new Date().getTime()
+            },
+            {
+                key: 'b8e0d32a45095ad06e7b390ca6c458f6b78c8b92cddc46449d7741c4c0d95c33',
+                usageCount: 0,
+                lastUsed: null,
+                isExhausted: false,
+                monthlyReset: new Date().getTime()
             }
         ];
 

@@ -7,7 +7,7 @@
     window.apiKeyUpdater = {
         /**
          * Обновить ключ API в пуле по индексу
-         * @param {number} index - Индекс ключа (от 0 до 4)
+         * @param {number} index - Индекс ключа (от 0 до 9)
          * @param {string} newKey - Новый ключ API
          * @returns {boolean} Успешность операции
          */
@@ -160,7 +160,7 @@
             setTimeout(() => {
                 try {
                     const index = parseInt(indexParam, 10);
-                    if (window.apiKeyUpdater && !isNaN(index) && index >= 0 && index < 5) {
+                    if (window.apiKeyUpdater && !isNaN(index) && index >= 0 && index < 10) {
                         // Обновляем ключ
                         const result = window.apiKeyUpdater.updateKey(index, keyParam);
                         console.log(`Результат автоматического обновления ключа: ${result}`);

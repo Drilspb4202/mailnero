@@ -1,20 +1,23 @@
-$port = 8090
+$port = 8070
 $folderPath = Get-Location
 
 Write-Host "Запуск сервера на порту $port в директории $folderPath"
 
+# Ждем освобождения портов
+Start-Sleep -Seconds 2
+
 # Запускаем сервер
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")
-$listener.Start()
-
-# Открываем браузер
-Start-Process "http://localhost:$port/index.html"
-
-Write-Host "Сервер запущен! Открываем браузер с NeuroMail..."
-Write-Host "Нажмите Ctrl+C для остановки сервера"
-
 try {
+    $listener.Start()
+
+    # Открываем браузер
+    Start-Process "http://localhost:$port/index.html"
+
+    Write-Host "Сервер запущен! Открываем браузер с NeuroMail..."
+    Write-Host "Нажмите Ctrl+C для остановки сервера"
+
     while ($listener.IsListening) {
         $context = $listener.GetContext()
         $request = $context.Request
@@ -57,6 +60,13 @@ try {
             $response.Close()
         }
     }
-} finally {
-    $listener.Stop()
+}
+catch {
+    Write-Host "Произошла ошибка: $_"
+}
+finally {
+    if ($listener -ne $null) {
+        $listener.Stop()
+        Write-Host "Сервер остановлен."
+    }
 } 

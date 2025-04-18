@@ -31,7 +31,13 @@
                     }
                 });
             }
-            console.log('Кэш очищен. Текущий ящик в localStorage:', localStorage.getItem('current_inbox_id'));
+            
+            // Очищаем localStorage от старых API ключей
+            localStorage.removeItem('api_key_pool_state');
+            localStorage.removeItem('mailslurp_api_key');
+            localStorage.removeItem('current_user_key');
+            
+            console.log('Кэш и localStorage очищены. Текущий ящик в localStorage:', localStorage.getItem('current_inbox_id'));
         }
         clearBrowserCache();
     </script>

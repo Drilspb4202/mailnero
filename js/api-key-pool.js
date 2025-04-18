@@ -40,7 +40,6 @@ class ApiKeyPool {
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
-            // Дополнительные API ключи
             {
                 key: '1918f9f286687184ba1fa19d3a1b0aa00931eaa946ad06e2ef0c2331dcd50797',
                 usageCount: 0,

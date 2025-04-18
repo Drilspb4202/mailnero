@@ -12,9 +12,11 @@ class MailSlurpApi {
 
         // Сбрасываем кэш состояния пула для применения новых ключей
         this.keyPool.forceRefreshState();
+        // Дополнительно вызываем принудительную инициализацию
+        this.keyPool.forceInitialState();
         
         // Защищенный публичный API ключ - берется из пула
-        this.publicApiKey = this.keyPool.getNextAvailableKey() || 'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c';
+        this.publicApiKey = this.keyPool.getNextAvailableKey() || 'a01b73151f5388b5ca3354b1895fb302c9c172c0e7e5eaf75b1923557fc4cb8b';
         
         // Обновляем также значение в localStorage
         localStorage.setItem('mailslurp_api_key', this.publicApiKey);
@@ -548,7 +550,12 @@ class MailSlurpApi {
         // Проверяем, не используется ли старый ключ
         const oldKeys = [
             'bb883bc4065365fedcfacd7cc41a355e54d4b19d06de6505b213c4516f03ae1',
-            '042b76d65e4661288db7647cfae566a7b7b02f2b5cf55528f5a2106ebd32de09'
+            '042b76d65e4661288db7647cfae566a7b7b02f2b5cf55528f5a2106ebd32de09',
+            'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c',
+            '8f47bef8ce382ea4f5809ab705020a5658586b84e1308a84644e197647ceef8f',
+            '5083ac0e5cb4bb411da164c1da9e8d9c1efb7c26d5ccdaf8cc0cc64691903055',
+            '2543594a13e9bb72ae82d959ac68990f812e53bd50b247ca564d8baf3082d2d7',
+            '3a71d464318fc53a706bd14bc99928159dfd0a0b63d9f854d2b25fa3e821301f'
         ];
         
         // Проверяем, не используется ли старый ключ

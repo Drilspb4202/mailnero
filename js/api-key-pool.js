@@ -6,41 +6,40 @@ class ApiKeyPool {
         // Пул публичных API ключей
         this.publicKeys = [
             {
-                key: 'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c',
+                key: 'a01b73151f5388b5ca3354b1895fb302c9c172c0e7e5eaf75b1923557fc4cb8b',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '8f47bef8ce382ea4f5809ab705020a5658586b84e1308a84644e197647ceef8f',
+                key: 'b1c4641185292fdb5a77c14c3e6726435281f7e57afb77d6d10d9bbb38eec933',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '5083ac0e5cb4bb411da164c1da9e8d9c1efb7c26d5ccdaf8cc0cc64691903055',
+                key: '6cd419250240e258876687b0fad1c030440425c3355b7ea5a53564810492b71f',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '2543594a13e9bb72ae82d959ac68990f812e53bd50b247ca564d8baf3082d2d7',
+                key: 'abb04d4f5c8ac08c69647627d228e9256fc47de5ee3144dd63bc2409c8a9deb5',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '3a71d464318fc53a706bd14bc99928159dfd0a0b63d9f854d2b25fa3e821301f',
+                key: '1f42144c45ec589e48adad9059b06ee88e996639ba5da463338c99912a50cee7',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
-            // Новые API ключи
             {
                 key: '1918f9f286687184ba1fa19d3a1b0aa00931eaa946ad06e2ef0c2331dcd50797',
                 usageCount: 0,
@@ -559,6 +558,31 @@ class ApiKeyPool {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
         return results;
+    }
+
+    /**
+     * Форсированный сброс localStorage и сохранение нового состояния при загрузке
+     */
+    forceInitialState() {
+        // Удаление данных о ключах из localStorage для применения новых ключей
+        localStorage.removeItem('api_key_pool_state');
+        localStorage.removeItem('mailslurp_api_key');
+        localStorage.removeItem('current_user_key');
+        
+        // Сбрасываем состояние для всех ключей
+        this.publicKeys.forEach((keyData, index) => {
+            this.publicKeys[index].usageCount = 0;
+            this.publicKeys[index].isExhausted = false;
+            this.publicKeys[index].lastUsed = null;
+        });
+        
+        // Начинаем с первого ключа
+        this.currentKeyIndex = 0;
+        
+        // Сохраняем новое состояние
+        this.saveState();
+        
+        console.log('Принудительный сброс состояния пула ключей выполнен');
     }
 }
 

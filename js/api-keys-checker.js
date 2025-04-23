@@ -88,35 +88,35 @@
         // Устанавливаем новые работающие ключи
         const apiKeys = [
             {
-                key: 'a01b73151f5388b5ca3354b1895fb302c9c172c0e7e5eaf75b1923557fc4cb8b',
+                key: 'f5f454f136d60796f54bd09c0a42ae3ebf86c1b2da168ffe3fe556f909c03e27',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: 'b1c4641185292fdb5a77c14c3e6726435281f7e57afb77d6d10d9bbb38eec933',
+                key: '6e3d32ab5bfc10b96c45509bc8c3a8e834437182e25210bd2b9a089e65ff0136',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '6cd419250240e258876687b0fad1c030440425c3355b7ea5a53564810492b71f',
+                key: '35e2335cd08c2f29e28eef9d6ad19c0f32b09891eb39626063a71b81e3087f81',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: 'abb04d4f5c8ac08c69647627d228e9256fc47de5ee3144dd63bc2409c8a9deb5',
+                key: '3de775797c8432f33e3a9e9e8abab4547b85ab8c0bd924f513946a66c8597cd5',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '1f42144c45ec589e48adad9059b06ee88e996639ba5da463338c99912a50cee7',
+                key: '1509c2c04c2f954a606ffa1a03d60422d16de7d8c14eb1ca386cb922271bd735',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,

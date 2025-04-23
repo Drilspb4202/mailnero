@@ -3,140 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сброс API Ключей - NeuroMail</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <title>Сброс API ключей</title>
     <style>
         body {
-            background-color: #1a1a1a;
-            color: #f5f5f5;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
         }
-        .reset-container {
-            max-width: 600px;
-            padding: 2rem;
-            background-color: #222;
-            border-radius: 10px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-        }
-        .btn-primary {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            border: none;
-        }
-        .api-key {
-            font-family: monospace;
-            background-color: #333;
-            padding: 0.5rem;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
             border-radius: 5px;
-            margin-bottom: 0.5rem;
-            overflow-x: auto;
-            white-space: nowrap;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #e8f8f5;
+            border-radius: 3px;
+            display: none;
+        }
+        .error {
+            color: #c0392b;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #fadbd8;
+            border-radius: 3px;
+            display: none;
+        }
+        .info {
+            background-color: #eef7fa;
+            padding: 10px;
+            border-radius: 3px;
+            margin-bottom: 20px;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="reset-container">
-            <h2 class="mb-4 text-center">Сброс API Ключей</h2>
-            
-            <div class="alert alert-warning">
-                <p>Обнаружена проблема с API-ключами. Эта страница поможет сбросить устаревшие ключи и установить новые рабочие ключи.</p>
-            </div>
-            
-            <h4 class="mt-4">Новые API-ключи:</h4>
-            <div class="api-key">f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c</div>
-            
-            <div class="my-4">
-                <p>Нажмите на кнопку ниже, чтобы выполнить следующие действия:</p>
-                <ul>
-                    <li>Очистить все локальное хранилище, связанное с API-ключами</li>
-                    <li>Установить новые рабочие ключи API</li>
-                    <li>Сбросить состояние пула ключей</li>
-                    <li>Вернуться на главную страницу</li>
-                </ul>
-            </div>
-            
-            <div class="text-center mt-4">
-                <button id="reset-btn" class="btn btn-primary btn-lg">Сбросить API-ключи и вернуться</button>
-            </div>
-            
-            <div id="status" class="mt-4 text-center d-none">
-                <div class="spinner-border text-light me-2" role="status">
-                    <span class="visually-hidden">Загрузка...</span>
-                </div>
-                <span id="status-text">Сброс ключей...</span>
-            </div>
+        <h1>Сброс API ключей NeuroMail</h1>
+        
+        <div class="info">
+            <p>Эта страница позволяет выполнить полный сброс API ключей и локальных данных приложения NeuroMail.</p>
+            <p>Используйте эту функцию, если у вас возникают проблемы с созданием временных почтовых ящиков или при ошибках API.</p>
+        </div>
+        
+        <button id="resetButton">Сбросить все API ключи и данные</button>
+        
+        <div id="successMessage" class="success">
+            API ключи успешно сброшены. <a href="index.html">Вернуться в приложение</a>
+        </div>
+        
+        <div id="errorMessage" class="error">
+            Произошла ошибка при сбросе ключей. Пожалуйста, попробуйте еще раз.
         </div>
     </div>
     
     <script>
-        // Функция для сброса API-ключей и перехода на главную страницу
-        function resetApiKeys() {
-            const statusEl = document.getElementById('status');
-            const statusTextEl = document.getElementById('status-text');
-            const resetBtn = document.getElementById('reset-btn');
-            
-            statusEl.classList.remove('d-none');
-            resetBtn.disabled = true;
-            
+        document.getElementById('resetButton').addEventListener('click', function() {
             try {
-                // Удаляем все записи в localStorage, связанные с API-ключами
-                localStorage.removeItem('api_key_pool_state');
-                localStorage.removeItem('current_user_key');
-                localStorage.removeItem('mailslurp_api_key');
-                localStorage.removeItem('use_personal_api');
-                localStorage.removeItem('api_mode');
-                localStorage.removeItem('mailslurp_personal_api_key');
-                
-                // Устанавливаем новые работающие ключи
-                const apiKeys = [
-                    {
-                        key: 'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c',
-                        usageCount: 0,
-                        lastUsed: null,
-                        isExhausted: false,
-                        monthlyReset: new Date().getTime()
-                    },
-                    {
-                        key: '8f47bef8ce382ea4f5809ab705020a5658586b84e1308a84644e197647ceef8f',
-                        usageCount: 0,
-                        lastUsed: null,
-                        isExhausted: false,
-                        monthlyReset: new Date().getTime()
-                    }
+                // Список новых API ключей
+                const newApiKeys = [
+                    'f5f454f136d60796f54bd09c0a42ae3ebf86c1b2da168ffe3fe556f909c03e27',
+                    '6e3d32ab5bfc10b96c45509bc8c3a8e834437182e25210bd2b9a089e65ff0136',
+                    '35e2335cd08c2f29e28eef9d6ad19c0f32b09891eb39626063a71b81e3087f81',
+                    '3de775797c8432f33e3a9e9e8abab4547b85ab8c0bd924f513946a66c8597cd5',
+                    '1509c2c04c2f954a606ffa1a03d60422d16de7d8c14eb1ca386cb922271bd735'
                 ];
                 
-                // Сохраняем новое состояние пула ключей
+                // Удаляем все текущие данные из localStorage
+                localStorage.clear();
+                
+                // Создаем новое состояние пула ключей с новыми ключами
+                const apiKeys = newApiKeys.map(key => ({
+                    key: key,
+                    usageCount: 0,
+                    lastUsed: null,
+                    isExhausted: false,
+                    monthlyReset: new Date().getTime()
+                }));
+                
+                // Формируем новое состояние
                 const newState = {
                     publicKeys: apiKeys,
                     currentKeyIndex: 0
                 };
                 
-                // Обновляем локальное хранилище
+                // Сохраняем в localStorage
                 localStorage.setItem('api_key_pool_state', JSON.stringify(newState));
-                localStorage.setItem('mailslurp_api_key', apiKeys[0].key);
+                localStorage.setItem('mailslurp_api_key', newApiKeys[0]);
                 localStorage.setItem('api_mode', 'public');
                 
-                statusTextEl.textContent = 'API-ключи успешно сброшены! Перенаправление...';
-                
-                // Перенаправляем на главную страницу через 2 секунды
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
-                
+                // Показываем сообщение об успехе
+                document.getElementById('successMessage').style.display = 'block';
             } catch (error) {
-                console.error('Ошибка при сбросе API-ключей:', error);
-                statusTextEl.textContent = 'Произошла ошибка при сбросе ключей. Попробуйте еще раз.';
-                statusEl.classList.add('text-danger');
-                resetBtn.disabled = false;
+                console.error('Ошибка при сбросе ключей:', error);
+                document.getElementById('errorMessage').style.display = 'block';
             }
-        }
-        
-        // Привязываем обработчик события клика
-        document.getElementById('reset-btn').addEventListener('click', resetApiKeys);
+        });
     </script>
 </body>
 </html> 

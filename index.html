@@ -31,13 +31,23 @@
                     }
                 });
             }
-            console.log('Кэш очищен. Текущий ящик в localStorage:', localStorage.getItem('current_inbox_id'));
+            
+            // Очищаем localStorage от старых API ключей
+            localStorage.removeItem('api_key_pool_state');
+            localStorage.removeItem('mailslurp_api_key');
+            localStorage.removeItem('current_user_key');
+            
+            console.log('Кэш и localStorage очищены. Текущий ящик в localStorage:', localStorage.getItem('current_inbox_id'));
         }
         clearBrowserCache();
     </script>
 
     <!-- Скрипт проверки API-ключей -->
     <script src="js/api-keys-checker.js"></script>
+    
+    <!-- Яндекс.RTB -->
+    <script>window.yaContextCb=window.yaContextCb||[]</script>
+    <script src="https://yandex.ru/ads/system/context.js" async></script>
 </head>
 <body>
     <!-- Анимированный фон -->
@@ -73,16 +83,16 @@
 
         <!-- Левый рекламный блок -->
         <div class="ad-container-left">
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-ad fa-3x"></i>
-                <p>Рекламное место 1</p>
-            </div>
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-bullhorn fa-3x"></i>
-                <p>Рекламное место 2</p>
-            </div>
+            <!-- Яндекс.RTB R-A-14920627-2 -->
+            <div id="yandex_rtb_R-A-14920627-2"></div>
+            <script>
+            window.yaContextCb.push(() => {
+                Ya.Context.AdvManager.render({
+                    "blockId": "R-A-14920627-2",
+                    "renderTo": "yandex_rtb_R-A-14920627-2"
+                })
+            })
+            </script>
         </div>
         
         <!-- Основное содержимое -->
@@ -133,6 +143,7 @@
                         </button>
                     </div>
                     
+                    <!-- Таблица почтовых ящиков -->
                     <div class="inbox-list-container">
                         <table class="data-table" id="inboxes-table">
                             <thead>
@@ -151,13 +162,50 @@
                             </tbody>
                         </table>
                     </div>
-
+                    
+                    <!-- VPN Warning -->
+                    <div class="warning-section" style="margin: 15px 0; padding: 15px; background-color: rgba(255, 50, 50, 0.2); border: 2px solid #ff5555; border-radius: 8px; display: flex; align-items: center;">
+                        <div style="font-size: 24px; color: #ff5555; margin-right: 15px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff5555; margin: 0 0 10px 0; font-weight: bold;">Внимание! Важная информация</h4>
+                            <p style="margin: 0; color: #fff;"><span data-i18n="vpn_warning">Если вы находитесь в России, для корректной работы сервиса необходимо использовать VPN. В настоящее время сервис может работать нестабильно на мобильных устройствах.</span></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Скрипт для обеспечения видимости предупреждения -->
+                    <script>
+                        (function() {
+                            const warning = document.querySelector('.warning-section');
+                            if (warning) {
+                                warning.style.display = 'flex';
+                                warning.style.opacity = '1';
+                                warning.style.visibility = 'visible';
+                                
+                                // Анимация для привлечения внимания
+                                let isIncreasing = false;
+                                warning.style.transition = 'box-shadow 0.5s';
+                                
+                                setInterval(() => {
+                                    if (isIncreasing) {
+                                        warning.style.boxShadow = '0 0 15px rgba(255, 80, 80, 0.7)';
+                                    } else {
+                                        warning.style.boxShadow = '0 0 5px rgba(255, 80, 80, 0.3)';
+                                    }
+                                    isIncreasing = !isIncreasing;
+                                }, 1000);
+                            }
+                        })();
+                    </script>
+                    
+                    <!-- Основная информация -->
                     <div class="info-panel">
                         <div class="info-panel-icon">
                             <i class="fas fa-magic"></i>
                         </div>
                         <div class="info-panel-content">
-                            <h4 data-i18n="welcome_title">✨ Добро пожаловать в NeuroMail!</h4>
+                            <h4 data-i18n="welcome_title">👋 Добро пожаловать в NeuroMail!</h4>
                             <p data-i18n="welcome_desc">NeuroMail — это мощный инструмент для работы с временными почтовыми ящиками. Создавайте виртуальные ящики для защиты вашей основной почты от спама и нежелательных рассылок.</p>
                             <div class="feature-list">
                                 <div class="feature-item">
@@ -174,13 +222,78 @@
                                 </div>
                             </div>
                             <p><strong data-i18n="tip">Совет:</strong> <span data-i18n="tip_copy">Нажмите на адрес электронной почты в таблице, чтобы скопировать его в буфер обмена.</span></p>
-                            <div class="warning-note">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <span><strong data-i18n="warning">Важное примечание:</strong> <span data-i18n="vpn_warning">Для корректной работы сервиса необходимо использовать VPN. В настоящее время сервис может работать нестабильно на мобильных устройствах.</span></span>
-                            </div>
                             <p class="public-key-note"><i class="fas fa-clock"></i> <strong data-i18n="note">Обратите внимание:</strong> <span data-i18n="public_api_note">При использовании публичного API ключа почтовые ящики автоматически удаляются через 5 минут.</span></p>
                         </div>
                     </div>
+                    
+                    <!-- Telegram каналы -->
+                    <div class="telegram-channels">
+                        <h3 style="text-align: center; margin-bottom: 20px; color: #3498db;" data-i18n="telegram_channels_title">Наши Telegram каналы</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                            <!-- Первый канал -->
+                            <div class="telegram-card" style="background: linear-gradient(135deg, #1c92d2, #0a2e5c); border-radius: 10px; padding: 20px; width: 280px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                    <div style="background-color: #fff; border-radius: 50%; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; margin-right: 15px;">
+                                        <i class="fab fa-telegram-plane" style="color: #0088cc; font-size: 28px;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style="margin: 0; color: white; font-size: 18px;" data-i18n="telegram_channel1_title">AROMA SPA СТУДИЯ</h4>
+                                        <small style="color: #a8d5ff;">@radmila_essential_oil</small>
+                                    </div>
+                                </div>
+                                <p style="color: #e6f2ff; margin-bottom: 15px; font-size: 14px; white-space: pre-line;" data-i18n="telegram_channel1_desc">🏢 AROMA SPA СТУДИЯ radmilaessentialoil.ru
+🌿 Аромаэксперт
+👩🏻‍🎓 Куратор аромашколы
+💡 Провела 50+ аромадиагностик
+⚖️ Помогаю гармонизировать эмоциональное и физическое состояния эфирными маслами
+🪄 Очищение и омоложение более 10 лет</p>
+                                <a href="https://t.me/radmila_essential_oil" target="_blank" style="display: block; text-align: center; background-color: #0088cc; color: white; text-decoration: none; padding: 10px; border-radius: 5px; font-weight: bold; transition: all 0.3s ease;">
+                                    <i class="fas fa-external-link-alt"></i> <span data-i18n="telegram_channel_subscribe">Подписаться</span>
+                                </a>
+                            </div>
+                            
+                            <!-- Второй канал -->
+                            <div class="telegram-card" style="background: linear-gradient(135deg, #614385, #516395); border-radius: 10px; padding: 20px; width: 280px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                    <div style="background-color: #fff; border-radius: 50%; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; margin-right: 15px;">
+                                        <i class="fab fa-telegram-plane" style="color: #0088cc; font-size: 28px;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style="margin: 0; color: white; font-size: 18px;" data-i18n="telegram_channel2_title">NeuroVerse_GPT</h4>
+                                        <small style="color: #d6c5ff;">@NeuroVerse_GPT</small>
+                                    </div>
+                                </div>
+                                <p style="color: #f0e6ff; margin-bottom: 15px; font-size: 14px; white-space: pre-line;" data-i18n="telegram_channel2_desc">• Секреты нейросетей — лайфхаки, гайды, фишки для работы с GPT и не только. 🧠⚡️
+• Трюки Cursor — как ускорить разработку, писать код умнее и использовать скрытые возможности. 💻🔥
+• Эксклюзивные файлы на CursorFree — готовые решения, шаблоны и инструменты</p>
+                                <a href="https://t.me/NeuroVerse_GPT" target="_blank" style="display: block; text-align: center; background-color: #0088cc; color: white; text-decoration: none; padding: 10px; border-radius: 5px; font-weight: bold; transition: all 0.3s ease;">
+                                    <i class="fas fa-external-link-alt"></i> <span data-i18n="telegram_channel_join">Присоединиться</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Яндекс.RTB R-A-14920627-1 -->
+                    <div id="yandex_rtb_R-A-14920627-1"></div>
+                    <script>
+                    window.yaContextCb.push(() => {
+                        Ya.Context.AdvManager.render({
+                            "blockId": "R-A-14920627-1",
+                            "renderTo": "yandex_rtb_R-A-14920627-1"
+                        })
+                    })
+                    </script>
+                    
+                    <!-- Яндекс.RTB R-A-14920627-4 -->
+                    <div id="yandex_rtb_R-A-14920627-4"></div>
+                    <script>
+                    window.yaContextCb.push(() => {
+                        Ya.Context.AdvManager.render({
+                            "blockId": "R-A-14920627-2",
+                            "renderTo": "yandex_rtb_R-A-14920627-4"
+                        })
+                    })
+                    </script>
                 </section>
 
                 <!-- Секция писем -->
@@ -252,21 +365,19 @@
                         <div class="settings-group">
                             <h3 data-i18n="settings_api"><i class="fas fa-key"></i> API ключ</h3>
                             
-                            <!-- Улучшенный блок для выбора типа API и отображения статуса -->
-                            <div class="api-mode-selector">
+                            <!-- Настройки API -->
+                            <div class="form-group">
                                 <div class="api-mode-label" data-i18n="settings_api_mode_label"><i class="fas fa-exchange-alt"></i> Режим API</div>
-                                <div class="api-mode-toggle">
+                                <div class="api-mode-options">
                                     <span class="api-mode-option" id="public-api-option" data-i18n="settings_api_mode_public"><i class="fas fa-globe"></i> Публичный</span>
-                                    <label class="api-mode-switch">
-                                        <input type="checkbox" id="api-mode-toggle">
-                                        <span class="api-mode-slider"></span>
-                                    </label>
+                                    
+                                    <span class="api-mode-separator">|</span>
+                                    
                                     <span class="api-mode-option" id="personal-api-option" data-i18n="settings_api_mode_personal"><i class="fas fa-user-lock"></i> Персональный</span>
-                                </div>
-                                
-                                <div class="api-status-indicator">
-                                    <span class="status-dot" id="api-status-dot"></span>
-                                    <span id="api-status-text" data-i18n="settings_api_status_checking">Проверка соединения...</span>
+                                    
+                                    <span class="api-mode-separator">|</span>
+                                    
+                                    <span class="api-mode-option" id="combined-api-option" data-i18n="settings_api_mode_combined"><i class="fas fa-sync-alt"></i> Комбинированный</span>
                                 </div>
                             </div>
                             
@@ -314,7 +425,7 @@
                                 <label for="auto-delete-inboxes" data-i18n="settings_auto_delete_inboxes">Автоматически удалять почтовые ящики после использования</label>
                             </div>
                             <div class="settings-field checkbox-field">
-                                <input type="checkbox" id="auto-delete-emails">
+                                <input type="checkbox" id="auto-delete-emails" checked>
                                 <label for="auto-delete-emails" data-i18n="settings_auto_delete_emails">Удалять письма старше:</label>
                                 <input type="number" id="auto-delete-days" class="number-input" value="7" min="1">
                                 <span data-i18n="settings_auto_delete_days">дней</span>
@@ -323,11 +434,11 @@
                                 <label data-i18n="settings_inbox_timer"><i class="fas fa-hourglass-half"></i> Таймер удаления ящика после просмотра:</label>
                                 <div class="radio-controls">
                                     <label class="radio-control">
-                                        <input type="radio" name="inbox-delete-timer" value="0" checked>
+                                        <input type="radio" name="inbox-delete-timer" value="0">
                                         <span data-i18n="settings_inbox_timer_never">Не удалять</span>
                                     </label>
                                     <label class="radio-control">
-                                        <input type="radio" name="inbox-delete-timer" value="5">
+                                        <input type="radio" name="inbox-delete-timer" value="5" checked>
                                         <span data-i18n="settings_inbox_timer_5min">Через 5 минут</span>
                                     </label>
                                     <label class="radio-control">
@@ -514,16 +625,16 @@
 
         <!-- Правый рекламный блок -->
         <div class="ad-container-right">
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-chart-line fa-3x"></i>
-                <p>Рекламное место 3</p>
-            </div>
-            <div class="ad-block">
-                <span class="ad-title">РЕКЛАМА</span>
-                <i class="fas fa-gift fa-3x"></i>
-                <p>Рекламное место 4</p>
-            </div>
+            <!-- Яндекс.RTB R-A-14920627-3 -->
+            <div id="yandex_rtb_R-A-14920627-3"></div>
+            <script>
+            window.yaContextCb.push(() => {
+                Ya.Context.AdvManager.render({
+                    "blockId": "R-A-14920627-3",
+                    "renderTo": "yandex_rtb_R-A-14920627-3"
+                })
+            })
+            </script>
         </div>
     </div>
 

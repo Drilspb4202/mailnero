@@ -16,11 +16,7 @@
             const oldKeys = [
                 'bb883bc4065365fedcfacd7cc41a355e54d4b19d06de6505b213c4516f03ae1',
                 '042b76d65e4661288db7647cfae566a7b7b02f2b5cf55528f5a2106ebd32de09',
-                'f32302aca233b7f4089f7c08b53d949a23bb639f7f01776f07056638d81f292c',
-                '8f47bef8ce382ea4f5809ab705020a5658586b84e1308a84644e197647ceef8f',
-                '5083ac0e5cb4bb411da164c1da9e8d9c1efb7c26d5ccdaf8cc0cc64691903055',
-                '2543594a13e9bb72ae82d959ac68990f812e53bd50b247ca564d8baf3082d2d7',
-                '3a71d464318fc53a706bd14bc99928159dfd0a0b63d9f854d2b25fa3e821301f'
+                '7d65e4661288db7647cfae566a7b7b02f2b5cf55528f5a2106ebd32de09042b'
             ];
             
             // Получаем текущий ключ из localStorage
@@ -83,40 +79,18 @@
         localStorage.removeItem('current_user_key');
         localStorage.removeItem('mailslurp_api_key');
         localStorage.removeItem('use_personal_api');
-        localStorage.removeItem('api_mode');
         
         // Устанавливаем новые работающие ключи
         const apiKeys = [
             {
-                key: 'f5f454f136d60796f54bd09c0a42ae3ebf86c1b2da168ffe3fe556f909c03e27',
+                key: '291bfc5c2846a21115cabdd60c0ea4be1b5884cf08761575cbaff9797a429e2d',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '6e3d32ab5bfc10b96c45509bc8c3a8e834437182e25210bd2b9a089e65ff0136',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: '35e2335cd08c2f29e28eef9d6ad19c0f32b09891eb39626063a71b81e3087f81',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: '3de775797c8432f33e3a9e9e8abab4547b85ab8c0bd924f513946a66c8597cd5',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: '1509c2c04c2f954a606ffa1a03d60422d16de7d8c14eb1ca386cb922271bd735',
+                key: 'f74ec85c249827e83b58eeab8b15e8d9cc91d2ca5508c5c8b758805756d524b2',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
@@ -133,7 +107,7 @@
         // Обновляем локальное хранилище
         localStorage.setItem('api_key_pool_state', JSON.stringify(newState));
         localStorage.setItem('mailslurp_api_key', apiKeys[0].key);
-        localStorage.setItem('api_mode', 'public');
+        localStorage.setItem('use_personal_api', 'false');
         
         console.log('API-ключи успешно сброшены к новым рабочим ключам');
     }

@@ -124,7 +124,6 @@ class I18nManager {
                 'settings_api_mode_label': 'Режим API',
                 'settings_api_mode_public': 'Публичный',
                 'settings_api_mode_personal': 'Персональный',
-                'settings_api_mode_combined': 'Комбинированный',
                 'settings_api_key_hide': 'Скрыть',
                 'settings_api_key_show': 'Показать',
                 'settings_api_status_checking': 'Проверка соединения...',
@@ -211,16 +210,7 @@ class I18nManager {
                 'wallet_modal_title': 'Кошелек USDT TRC20',
                 'wallet_modal_desc': 'Вы можете поддержать проект, отправив USDT на следующий кошелек:',
                 'wallet_modal_note': 'Используйте только сеть TRC20 для отправки USDT.',
-                'wallet_copy_btn': 'Копировать адрес',
-                
-                // Telegram каналы
-                'telegram_channels_title': 'Наши Telegram каналы',
-                'telegram_channel1_title': 'AROMA SPA СТУДИЯ',
-                'telegram_channel1_desc': '🏢 AROMA SPA СТУДИЯ radmilaessentialoil.ru\n🌿 Аромаэксперт\n👩🏻‍🎓 Куратор аромашколы\n💡 Провела 50+ аромадиагностик\n⚖️ Помогаю гармонизировать эмоциональное и физическое состояния эфирными маслами\n🪄 Очищение и омоложение более 10 лет',
-                'telegram_channel2_title': 'NeuroVerse_GPT',
-                'telegram_channel2_desc': '• Секреты нейросетей — лайфхаки, гайды, фишки для работы с GPT и не только. 🧠⚡️\n• Трюки Cursor — как ускорить разработку, писать код умнее и использовать скрытые возможности. 💻🔥\n• Эксклюзивные файлы на CursorFree — готовые решения, шаблоны и инструменты',
-                'telegram_channel_subscribe': 'Подписаться',
-                'telegram_channel_join': 'Присоединиться'
+                'wallet_copy_btn': 'Копировать адрес'
             },
             'en': {
                 // General
@@ -346,7 +336,6 @@ class I18nManager {
                 'settings_api_mode_label': 'API mode',
                 'settings_api_mode_public': 'Public',
                 'settings_api_mode_personal': 'Personal',
-                'settings_api_mode_combined': 'Combined',
                 'settings_api_key_hide': 'Hide',
                 'settings_api_key_show': 'Show',
                 'settings_api_status_checking': 'Checking connection...',
@@ -432,17 +421,8 @@ class I18nManager {
                 'donate_note': 'Use only the TRC20 network for sending USDT.',
                 'wallet_modal_title': 'USDT TRC20 Wallet',
                 'wallet_modal_desc': 'You can support the project by sending USDT to the following wallet:',
-                'wallet_modal_note': 'Use only the TRC20 network to send USDT.',
-                'wallet_copy_btn': 'Copy address',
-                
-                // Telegram channels
-                'telegram_channels_title': 'Our Telegram Channels',
-                'telegram_channel1_title': 'AROMA SPA STUDIO',
-                'telegram_channel1_desc': '🏢 AROMA SPA STUDIO radmilaessentialoil.ru\n🌿 Aroma expert\n👩🏻‍🎓 Aroma school curator\n💡 Conducted 50+ aroma diagnostics\n⚖️ Helping to harmonize emotional and physical states with essential oils\n🪄 Cleansing and rejuvenation for over 10 years',
-                'telegram_channel2_title': 'NeuroVerse_GPT',
-                'telegram_channel2_desc': '• Neural network secrets — lifehacks, guides, tips for working with GPT and more. 🧠⚡️\n• Cursor tricks — how to speed up development, write smarter code, and use hidden features. 💻🔥\n• Exclusive files on CursorFree — ready-made solutions, templates, and tools',
-                'telegram_channel_subscribe': 'Subscribe',
-                'telegram_channel_join': 'Join'
+                'wallet_modal_note': 'Use only the TRC20 network for sending USDT.',
+                'wallet_copy_btn': 'Copy address'
             }
         };
         

@@ -3083,3 +3083,137 @@ input:checked + .api-mode-slider {
 .badge-many.pulse-animation {
     animation: pulse-many 2s infinite;
 }
+
+/* Стили для рекламных блоков Яндекс.RTB */
+#yandex_rtb_R-A-14920627-1,
+#yandex_rtb_R-A-14920627-2,
+#yandex_rtb_R-A-14920627-3,
+#yandex_rtb_R-A-14920627-4 {
+    margin: 15px auto;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    text-align: center;
+    overflow: hidden;
+    min-height: 90px;
+}
+
+/* Улучшения для мобильных устройств */
+@media (max-width: 768px) {
+    #yandex_rtb_R-A-14920627-1,
+    #yandex_rtb_R-A-14920627-2,
+    #yandex_rtb_R-A-14920627-3,
+    #yandex_rtb_R-A-14920627-4 {
+        margin: 10px auto;
+    }
+}
+
+/* Стили для предупреждения о VPN */
+.warning-section {
+    margin: 15px 0 !important;
+    padding: 15px !important;
+    background-color: rgba(255, 50, 50, 0.2) !important;
+    border: 2px solid #ff5555 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    z-index: 1000 !important;
+    position: relative !important;
+}
+
+.warning-section h4 {
+    color: #ff5555 !important;
+    margin: 0 0 10px 0 !important;
+    font-weight: bold !important;
+}
+
+.warning-section p {
+    margin: 0 !important;
+    color: #fff !important;
+}
+
+.warning-section i {
+    color: #ff5555 !important;
+}
+
+/* Анимация пульсации для предупреждения */
+@keyframes pulse-warning {
+    0% {
+        box-shadow: 0 0 5px rgba(255, 80, 80, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(255, 80, 80, 0.7);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(255, 80, 80, 0.3);
+    }
+}
+
+.warning-section {
+    animation: pulse-warning 2s infinite;
+}
+
+/* Стили для переключателя режимов API */
+.api-mode-options {
+    display: flex;
+    align-items: center;
+    background: rgba(15, 11, 33, 0.4);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 15px;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.api-mode-option {
+    flex: 1;
+    padding: 8px 12px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+    position: relative;
+    user-select: none;
+}
+
+.api-mode-option i {
+    margin-right: 6px;
+    font-size: 0.9rem;
+}
+
+.api-mode-option:hover {
+    color: var(--text-color);
+    background: rgba(138, 43, 226, 0.1);
+}
+
+.api-mode-option.active {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: var(--shadow);
+    font-weight: 500;
+}
+
+.api-mode-separator {
+    color: var(--border-color);
+    opacity: 0.5;
+    user-select: none;
+}
+
+/* Стили для опции комбинированного режима */
+#combined-api-option i {
+    animation: spin 4s linear infinite;
+}
+
+#combined-api-option.active i {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -6,38 +6,38 @@ class ApiKeyPool {
         // Пул публичных API ключей
         this.publicKeys = [
             {
-                key: '2be6b637e36441f8b279d4831975686dc8b163effad42436f0b6619b857e2e0a',
+                key: '313900549c3e27b57d58ffd9d0e6dbde0c0db9d972e5ff7f26812c567c7beefc',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: 'c7d140c42a533bbbf7ebcef781131a9d77059471029d1031396e5583831a75ac',
+                key: 'cfc00cab6dbea7c39ee1e70ec7d45b1b8ce81b9abf12075e88f1e3bc41959473',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '899f2fb27c2b2419b964bd1e54815d793a09b0ae02d88cd4ebaba806590e4ffb',
+                key: '',
                 usageCount: 0,
                 lastUsed: null,
-                isExhausted: false,
+                isExhausted: true,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '23cd428561aacbf7e7ace9c8f3c33699bd5cea33b912bc14bd2c392fbe1d76e7',
+                key: '',
                 usageCount: 0,
                 lastUsed: null,
-                isExhausted: false,
+                isExhausted: true,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '27241a5ff4bd1967ddec80043b12a65060c33033a5fbb1bb24f24d39e7877000',
+                key: '',
                 usageCount: 0,
                 lastUsed: null,
-                isExhausted: false,
+                isExhausted: true,
                 monthlyReset: new Date().getTime()
             }
         ];
@@ -238,30 +238,13 @@ class ApiKeyPool {
      * @returns {string|null} API ключ или null, если все ключи исчерпаны
      */
     getNextAvailableKey() {
-        // Если пул пустой, возвращаем null
-        if (!this.publicKeys || this.publicKeys.length === 0) {
-            console.warn('Пул ключей пуст');
-            return null;
-        }
-        
-        // Проверяем, есть ли вообще доступные ключи
-        const hasAvailableKeys = this.publicKeys.some(keyData => !keyData.isExhausted && keyData.key);
-        if (!hasAvailableKeys) {
-            console.warn('Все ключи в пуле исчерпаны');
-            return null;
-        }
-        
-        // Начинаем с текущего индекса
         const startIndex = this.currentKeyIndex;
         let attempts = 0;
 
-        // Перебираем ключи, начиная с текущего индекса
         while (attempts < this.publicKeys.length) {
             const keyData = this.publicKeys[this.currentKeyIndex];
 
-            // Если ключ не исчерпан, возвращаем его
-            if (!keyData.isExhausted && keyData.key) {
-                console.log(`Используем ключ ${this.currentKeyIndex + 1}: ${keyData.key.substring(0, 8)}...`);
+            if (!keyData.isExhausted) {
                 return keyData.key;
             }
 
@@ -269,31 +252,8 @@ class ApiKeyPool {
             this.currentKeyIndex = (this.currentKeyIndex + 1) % this.publicKeys.length;
             attempts++;
         }
-        
-        // Если все ключи перебраны и ни один не подходит, сбрасываем флаги isExhausted
-        // для всех ключей, которые имеют хоть какой-то период отдыха (более 12 часов)
-        const now = new Date().getTime();
-        let resetFound = false;
-        
-        for (let i = 0; i < this.publicKeys.length; i++) {
-            const keyData = this.publicKeys[i];
-            // Если ключ исчерпан, но прошло больше 12 часов с момента последнего использования
-            if (keyData.isExhausted && keyData.lastUsed && now - keyData.lastUsed > 12 * 60 * 60 * 1000) {
-                console.log(`Сбрасываем статус исчерпания для ключа ${i + 1}, т.к. прошло более 12 часов`);
-                this.publicKeys[i].isExhausted = false;
-                this.publicKeys[i].usageCount = 0;
-                resetFound = true;
-            }
-        }
-        
-        // Если были сброшены некоторые ключи, пробуем еще раз
-        if (resetFound) {
-            this.saveState();
-            return this.getNextAvailableKey();
-        }
 
-        // Если все ключи исчерпаны и ни один не сброшен, возвращаем null
-        console.warn('Все ключи API исчерпаны, и ни один не может быть сброшен');
+        // Если все ключи исчерпаны, возвращаем null
         return null;
     }
 
@@ -301,51 +261,19 @@ class ApiKeyPool {
      * Пометить текущий ключ как исчерпанный
      */
     markCurrentKeyExhausted() {
-        console.log(`Пометка ключа ${this.publicKeys[this.currentKeyIndex].key.substring(0, 8)}... как исчерпанного`);
-        
-        // Помечаем текущий ключ как исчерпанный
         this.publicKeys[this.currentKeyIndex].isExhausted = true;
         this.publicKeys[this.currentKeyIndex].lastUsed = new Date().getTime();
         
-        // Проверяем наличие доступных ключей
-        let hasAvailableKeys = false;
-        for (let i = 0; i < this.publicKeys.length; i++) {
-            if (!this.publicKeys[i].isExhausted && this.publicKeys[i].key) {
-                hasAvailableKeys = true;
-                break;
-            }
-        }
-        
-        if (!hasAvailableKeys) {
-            console.warn('Все ключи API в пуле исчерпаны!');
-        }
-        
         // Переключаемся на следующий ключ
-        const oldIndex = this.currentKeyIndex;
         this.currentKeyIndex = (this.currentKeyIndex + 1) % this.publicKeys.length;
-        
-        // Если мы сделали полный круг и вернулись к текущему исчерпанному ключу,
-        // пробуем найти любой неисчерпанный ключ
-        if (this.publicKeys[this.currentKeyIndex].isExhausted) {
-            for (let i = 0; i < this.publicKeys.length; i++) {
-                if (!this.publicKeys[i].isExhausted && this.publicKeys[i].key) {
-                    this.currentKeyIndex = i;
-                    break;
-                }
-            }
-        }
-        
-        console.log(`Переключение с ключа ${oldIndex + 1} на ключ ${this.currentKeyIndex + 1}`);
         
         this.saveState();
 
         // Создаем событие об исчерпании ключа
-        const nextKey = this.getNextAvailableKey();
         const event = new CustomEvent('api-key-exhausted', {
             detail: {
-                exhaustedKey: this.publicKeys[oldIndex].key,
-                newKey: nextKey,
-                hasAvailableKeys: hasAvailableKeys
+                exhaustedKey: this.publicKeys[this.currentKeyIndex].key,
+                newKey: this.getNextAvailableKey()
             }
         });
         document.dispatchEvent(event);
@@ -523,31 +451,6 @@ class ApiKeyPool {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
         return results;
-    }
-
-    /**
-     * Форсированный сброс localStorage и сохранение нового состояния при загрузке
-     */
-    forceInitialState() {
-        // Удаление данных о ключах из localStorage для применения новых ключей
-        localStorage.removeItem('api_key_pool_state');
-        localStorage.removeItem('mailslurp_api_key');
-        localStorage.removeItem('current_user_key');
-        
-        // Сбрасываем состояние для всех ключей
-        this.publicKeys.forEach((keyData, index) => {
-            this.publicKeys[index].usageCount = 0;
-            this.publicKeys[index].isExhausted = false;
-            this.publicKeys[index].lastUsed = null;
-        });
-        
-        // Начинаем с первого ключа
-        this.currentKeyIndex = 0;
-        
-        // Сохраняем новое состояние
-        this.saveState();
-        
-        console.log('Принудительный сброс состояния пула ключей выполнен');
     }
 }
 

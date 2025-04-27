@@ -39,19 +39,15 @@ class MailSlurpApp {
      */
     async init() {
         try {
-            console.log('Инициализация приложения NeuroMail');
-            
-            // Инициализируем API клиент
-            this.api = new MailSlurpApi();
-            
-            // Инициализируем пользовательский интерфейс
-            this.ui = new MailSlurpUI();
-            
-            // Привязываем обработчики событий
-            this.bindUIEvents();
-            
+            console.log('Инициализация MailSlurp App...');
+
             // Убеждаемся, что предупреждение о VPN отображается
             this.ensureVpnWarningVisible();
+            
+            // Привязываем обработчики событий UI к методам приложения
+            this.bindUIEvents();
+            
+            console.log('Инициализация приложения...');
             
             // Показываем предупреждение о времени жизни ящика при публичном API
             const isPublicApi = !this.api.usePersonalApi;
@@ -67,17 +63,27 @@ class MailSlurpApp {
                 }, 1000);
             }
             
-            // Инициализируем поддержку редактора Markdown
+            // Загружаем список почтовых ящиков (и автоматически восстанавливаем текущий ящик, если он есть)
+            await this.loadInboxes();
+            
+            // Проверяем статус аккаунта
+            await this.checkAccountStatus();
+            
+            // Добавляем обработчик для кнопки обновления
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                this.loadInboxes();
+                this.checkAccountStatus();
+            });
+            
+            document.getElementById('confirm-send-email').addEventListener('click', () => {
+                this.sendEmail();
+            });
+            
+            // Инициализируем состояние Markdown редактора
             this.initMarkdownEditor();
             
             // Инициализируем генератор данных
             this.initDataGenerator();
-            
-            // Загружаем список почтовых ящиков (и автоматически восстанавливаем текущий ящик, если он есть)
-            this.loadInboxes();
-            
-            // Проверяем статус аккаунта
-            this.checkAccountStatus();
             
             // Запускаем интервал проверки новых писем
             this.startEmailCheckInterval();
@@ -90,9 +96,6 @@ class MailSlurpApp {
             
             // Инициализируем поддержку интернационализации
             this.initInternationalization();
-            
-            // Запускаем процесс автоудаления старых писем
-            this.startAutoDeleteEmails();
             
             console.log('Инициализация приложения завершена');
             return Promise.resolve();
@@ -120,25 +123,10 @@ class MailSlurpApp {
         this.ui.onSaveLogging = () => this.saveLogging();
         
         // События для управления API ключом и режимом
-        const updateApiKeyBtn = document.getElementById('update-api-key-btn');
-        if (updateApiKeyBtn) {
-            updateApiKeyBtn.addEventListener('click', () => this.updateApiKey());
-        }
-        
-        const resetToPublicApiBtn = document.getElementById('reset-to-public-api-btn');
-        if (resetToPublicApiBtn) {
-            resetToPublicApiBtn.addEventListener('click', () => this.resetToPublicApi());
-        }
-        
-        const apiModeToggle = document.getElementById('api-mode-toggle');
-        if (apiModeToggle) {
-            apiModeToggle.addEventListener('change', (e) => this.toggleApiMode(e.target.checked));
-        }
-        
-        const toggleApiKeyVisibility = document.getElementById('toggle-api-key-visibility');
-        if (toggleApiKeyVisibility) {
-            toggleApiKeyVisibility.addEventListener('click', () => this.toggleApiKeyVisibility());
-        }
+        document.getElementById('update-api-key-btn').addEventListener('click', () => this.updateApiKey());
+        document.getElementById('reset-to-public-api-btn').addEventListener('click', () => this.resetToPublicApi());
+        document.getElementById('api-mode-toggle').addEventListener('change', (e) => this.toggleApiMode(e.target.checked));
+        document.getElementById('toggle-api-key-visibility').addEventListener('click', () => this.toggleApiKeyVisibility());
         
         // Мобильная навигация - синхронизация с основной навигацией
         document.addEventListener('DOMContentLoaded', () => {
@@ -184,21 +172,6 @@ class MailSlurpApp {
         document.addEventListener('inbox-auto-deleted', (event) => {
             this.handleAutoDeletedInbox(event.detail);
         });
-        
-        // Добавляем обработчик для кнопки отправки письма в модальном окне
-        const confirmSendEmailBtn = document.getElementById('confirm-send-email');
-        if (confirmSendEmailBtn) {
-            confirmSendEmailBtn.addEventListener('click', () => this.sendEmail());
-        }
-        
-        // Добавляем обработчик для кнопки обновления
-        const refreshBtn = document.getElementById('refresh-btn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-                this.loadInboxes();
-                this.checkAccountStatus();
-            });
-        }
     }
     
     /**
@@ -391,35 +364,35 @@ class MailSlurpApp {
      */
     async deleteInbox(inboxId) {
         try {
-            this.ui.showToast(`Удаление ящика и всех его писем...`, 'info');
-            
             await this.api.deleteInbox(inboxId);
             
-            // Обновляем список ящиков
-            this.loadInboxes();
-            
-            // Если удален текущий ящик, очищаем выбор
+            // Если это текущий ящик, сбрасываем ID и очищаем localStorage
             if (this.currentInboxId === inboxId) {
                 this.currentInboxId = null;
                 this.currentInboxEmail = null;
                 this.emails = {};
                 
-                // Обновляем localStorage
+                // Очищаем данные в localStorage
                 localStorage.removeItem('current_inbox_id');
                 localStorage.removeItem('current_inbox_email');
                 
-                // Очищаем список писем
+                // Сбрасываем список писем
                 this.ui.emailsList.innerHTML = `
                     <tr class="no-inbox-selected">
-                        <td colspan="4" data-i18n="emails_no_inbox">Выберите почтовый ящик для просмотра писем</td>
+                        <td colspan="4">Выберите почтовый ящик для просмотра писем</td>
                     </tr>
                 `;
+                
+                this.ui.currentInboxTitle.textContent = '📧 Письма';
             }
             
-            this.ui.showToast(`Почтовый ящик и все его письма успешно удалены`, 'success');
+            // Перезагружаем список ящиков
+            await this.loadInboxes();
+            
+            this.ui.showToast('Почтовый ящик успешно удален', 'success');
         } catch (error) {
-            console.error('Ошибка при удалении ящика:', error);
-            this.ui.showToast(`Ошибка при удалении: ${error.message}`, 'error');
+            console.error('Ошибка при удалении почтового ящика:', error);
+            this.ui.showToast(`Ошибка: ${error.message}`, 'error');
         }
     }
     
@@ -638,125 +611,11 @@ class MailSlurpApp {
             totalReceived += this.emails[inboxId].length;
         }
         
-        // Получаем предыдущее значение для анимации
-        const previousReceived = this.receivedEmails;
-        
         // Обновляем счетчик полученных писем
         this.receivedEmails = totalReceived;
         
         // Обновляем UI
         this.ui.updateEmailStats(this.sentEmails, this.receivedEmails);
-        
-        // Создаем красивый счетчик, если его еще нет
-        this.updateReceivedEmailsCounter(previousReceived, totalReceived);
-    }
-    
-    /**
-     * Обновить счетчик полученных писем с красивой анимацией
-     * @param {number} previousCount - Предыдущее количество писем
-     * @param {number} newCount - Новое количество писем
-     */
-    updateReceivedEmailsCounter(previousCount, newCount) {
-        // Проверяем, существует ли контейнер для счетчика
-        let counterContainer = document.getElementById('emails-counter-container');
-        
-        // Если контейнера нет, создаем его
-        if (!counterContainer) {
-            counterContainer = document.createElement('div');
-            counterContainer.id = 'emails-counter-container';
-            counterContainer.className = 'emails-counter-container';
-            
-            // Добавляем стили для контейнера
-            const style = document.createElement('style');
-            style.textContent = `
-                .emails-counter-container {
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    background: linear-gradient(135deg, #3a7bd5, #2e5faa);
-                    color: white;
-                    border-radius: 50px;
-                    padding: 10px 20px;
-                    display: flex;
-                    align-items: center;
-                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-                    z-index: 1000;
-                    font-weight: bold;
-                    transition: all 0.3s ease;
-                    border: 2px solid rgba(255, 255, 255, 0.2);
-                }
-                .emails-counter-icon {
-                    margin-right: 10px;
-                    font-size: 20px;
-                }
-                .emails-counter-number {
-                    font-size: 22px;
-                    font-weight: bold;
-                }
-                .emails-counter-label {
-                    margin-left: 5px;
-                    font-size: 14px;
-                    opacity: 0.8;
-                }
-                .emails-counter-container.new-email {
-                    animation: pulse-counter 1s ease;
-                    background: linear-gradient(135deg, #4caf50, #2e7d32);
-                }
-                @keyframes pulse-counter {
-                    0% { transform: scale(1); }
-                    50% { transform: scale(1.1); }
-                    100% { transform: scale(1); }
-                }
-                .count-change {
-                    animation: count-up 1s ease-out;
-                }
-                @keyframes count-up {
-                    0% { transform: translateY(10px); opacity: 0; }
-                    100% { transform: translateY(0); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            // Создаем внутренние элементы
-            const iconElement = document.createElement('div');
-            iconElement.className = 'emails-counter-icon';
-            iconElement.innerHTML = '<i class="fas fa-envelope"></i>';
-            
-            const numberElement = document.createElement('div');
-            numberElement.className = 'emails-counter-number';
-            numberElement.id = 'emails-counter-number';
-            numberElement.textContent = newCount;
-            
-            const labelElement = document.createElement('div');
-            labelElement.className = 'emails-counter-label';
-            labelElement.textContent = 'писем';
-            
-            // Добавляем элементы в контейнер
-            counterContainer.appendChild(iconElement);
-            counterContainer.appendChild(numberElement);
-            counterContainer.appendChild(labelElement);
-            
-            // Добавляем контейнер в DOM
-            document.body.appendChild(counterContainer);
-        } else {
-            // Если контейнер уже существует, обновляем только число
-            const numberElement = document.getElementById('emails-counter-number');
-            if (numberElement) {
-                numberElement.textContent = newCount;
-                
-                // Добавляем анимацию, если число увеличилось
-                if (newCount > previousCount) {
-                    counterContainer.classList.add('new-email');
-                    numberElement.classList.add('count-change');
-                    
-                    // Удаляем классы анимации через 1 секунду
-                    setTimeout(() => {
-                        counterContainer.classList.remove('new-email');
-                        numberElement.classList.remove('count-change');
-                    }, 1000);
-                }
-            }
-        }
     }
     
     /**
@@ -1079,12 +938,6 @@ class MailSlurpApp {
     updateApiStatusIndicator(status) {
         const statusDot = document.getElementById('api-status-dot');
         const statusText = document.getElementById('api-status-text');
-        
-        // Проверка существования элементов
-        if (!statusDot || !statusText) {
-            console.warn('Элементы статуса API не найдены в DOM');
-            return;
-        }
         
         // Сбрасываем все классы
         statusDot.classList.remove('connected', 'disconnected');
@@ -1724,35 +1577,9 @@ class MailSlurpApp {
                 
                 // Обновляем статистику писем
                 this.updateEmailStats();
-                
-                // Автоматически переключаемся на вкладку с письмами
-                this.switchToEmailsTab();
             }
         } catch (error) {
             console.error('Ошибка при проверке новых писем:', error);
-        }
-    }
-    
-    /**
-     * Переключиться на вкладку с письмами
-     */
-    switchToEmailsTab() {
-        // Находим элементы для переключения вкладок
-        const emailsTab = document.querySelector('.nav-item[data-target="emails-section"]');
-        const emailsSection = document.getElementById('emails-section');
-        
-        if (emailsTab && emailsSection) {
-            // Убираем активный класс у всех вкладок и секций
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-            
-            // Активируем вкладку и секцию писем
-            emailsTab.classList.add('active');
-            emailsSection.classList.add('active');
-            
-            console.log('Переключение на вкладку с письмами выполнено автоматически');
-        } else {
-            console.warn('Не удалось найти элементы для переключения на вкладку с письмами');
         }
     }
     
@@ -2085,13 +1912,6 @@ class MailSlurpApp {
             
             // Показываем уведомление об ошибке
             this.ui.showToast('Неверный секретный код. Пожалуйста, проверьте введенный код и попробуйте снова.', 'error');
-            
-            // Показываем дополнительную информацию об автоудалении
-            if (code !== 'Skarn4202' && !this.api.secretCodeActivated && !this.api.usePersonalApi) {
-                setTimeout(() => {
-                    this.ui.showToast(`Ваши почтовые ящики будут автоматически удаляться через ${this.api.publicApiInboxLifetime/60000} минут при использовании публичного API.`, 'warning', 8000);
-                }, 1000);
-            }
         }
     }
     
@@ -2367,191 +2187,6 @@ class MailSlurpApp {
             });
         } else {
             console.warn('VPN warning not found in DOM');
-        }
-    }
-
-    /**
-     * Инициализирует прослушиватели событий для пользовательского интерфейса
-     */
-    initEventListeners() {
-        document.getElementById('new-inbox').addEventListener('click', () => this.createNewInbox());
-        document.getElementById('refresh-inbox-list').addEventListener('click', () => this.refreshInboxList());
-        document.getElementById('refresh-email-list').addEventListener('click', () => this.refreshEmailList());
-        document.getElementById('inbox-list').addEventListener('click', e => this.handleInboxListClick(e));
-        document.getElementById('email-list').addEventListener('click', e => this.handleEmailListClick(e));
-        document.getElementById('close-email-btn').addEventListener('click', () => this.closeEmailView());
-        document.getElementById('download-eml').addEventListener('click', () => this.downloadCurrentEmailAsEml());
-        
-        document.getElementById('settings-btn').addEventListener('click', () => this.toggleSettings());
-        document.getElementById('close-settings').addEventListener('click', () => this.closeSettings());
-        
-        document.getElementById('update-api-key-btn').addEventListener('click', () => this.updateApiKey());
-        
-        document.getElementById('public-api-option').addEventListener('click', () => this.setApiMode('public'));
-        document.getElementById('personal-api-option').addEventListener('click', () => this.setApiMode('personal'));
-        document.getElementById('combined-api-option').addEventListener('click', () => this.setApiMode('combined'));
-        
-        document.getElementById('toggle-api-key-visibility').addEventListener('click', () => this.toggleApiKeyVisibility());
-    }
-
-    /**
-     * Обновляет отображение настроек в соответствии с текущим состоянием
-     */
-    updateSettings() {
-        const apiMode = this.api.getCurrentApiMode();
-        const apiModeToggle = document.getElementById('api-mode-toggle');
-        
-        // Устанавливаем персональный ключ API в поле ввода
-        document.getElementById('api-key').value = this.api.getPersonalApiKey() || '';
-        
-        // Подсвечиваем активный режим API
-        this.highlightActiveApiMode(apiMode.mode);
-        
-        // Обновляем статус подключения
-        this.updateApiStatusIndicator(apiMode.connectionStatus);
-    }
-
-    /**
-     * Подсвечивает активный режим API
-     * @param {string} mode - Режим API ('public', 'personal', 'combined')
-     */
-    highlightActiveApiMode(mode) {
-        const publicOption = document.getElementById('public-api-option');
-        const personalOption = document.getElementById('personal-api-option');
-        const combinedOption = document.getElementById('combined-api-option');
-        
-        // Сначала убираем активный класс со всех опций
-        publicOption.classList.remove('active');
-        personalOption.classList.remove('active');
-        if (combinedOption) combinedOption.classList.remove('active');
-        
-        // Затем добавляем активный класс для выбранного режима
-        if (mode === 'public') {
-            publicOption.classList.add('active');
-        } else if (mode === 'personal') {
-            personalOption.classList.add('active');
-        } else if (mode === 'combined') {
-            if (combinedOption) combinedOption.classList.add('active');
-        }
-    }
-
-    /**
-     * Устанавливает режим API
-     * @param {string} mode - Режим API ('public', 'personal', 'combined')
-     */
-    setApiMode(mode) {
-        try {
-            // Проверяем, есть ли персональный ключ для режимов, которые его требуют
-            if ((mode === 'personal' || mode === 'combined') && !this.api.getPersonalApiKey()) {
-                // Если нет персонального ключа, показываем сообщение
-                this.showToast('Для использования этого режима необходимо установить персональный API-ключ', 'warning');
-                
-                // И переключаемся обратно на публичный режим
-                this.highlightActiveApiMode('public');
-                return;
-            }
-            
-            // Пытаемся переключить режим API
-            this.api.switchApiMode(mode);
-            
-            // Обновляем подсветку активного режима
-            this.highlightActiveApiMode(mode);
-            
-            // Показываем уведомление
-            let modeName = '';
-            if (mode === 'public') modeName = 'публичный';
-            else if (mode === 'personal') modeName = 'персональный';
-            else if (mode === 'combined') modeName = 'комбинированный';
-            
-            this.showToast(`Режим API переключен на "${modeName}"`, 'success');
-            
-            // Обновляем настройки
-            this.updateSettings();
-        } catch (error) {
-            console.error('Ошибка при переключении режима API:', error);
-            
-            // В случае ошибки переключаемся обратно на публичный режим
-            this.highlightActiveApiMode('public');
-            
-            // Показываем сообщение об ошибке
-            this.showToast(`Ошибка при переключении режима API: ${error.message}`, 'error');
-        }
-    }
-
-    /**
-     * Запустить процесс автоудаления старых писем
-     */
-    startAutoDeleteEmails() {
-        // Проверяем настройки автоудаления
-        const autoDeleteEmails = localStorage.getItem('mailslurp_auto_delete_emails') === 'true';
-        const autoDeleteDays = parseInt(localStorage.getItem('mailslurp_auto_delete_days') || '7');
-        
-        if (!autoDeleteEmails || isNaN(autoDeleteDays) || autoDeleteDays <= 0) {
-            console.log('Автоудаление писем отключено или настроено некорректно');
-            return;
-        }
-        
-        console.log(`Включено автоудаление писем старше ${autoDeleteDays} дней`);
-        
-        // Запускаем периодическую проверку и удаление старых писем (каждые 6 часов)
-        this.emailCleanupInterval = setInterval(() => {
-            this.cleanupOldEmails(autoDeleteDays);
-        }, 6 * 60 * 60 * 1000); // 6 часов
-        
-        // Также сразу запускаем очистку при старте
-        this.cleanupOldEmails(autoDeleteDays);
-    }
-    
-    /**
-     * Очистить старые письма
-     * @param {number} days - Количество дней для хранения писем
-     */
-    async cleanupOldEmails(days) {
-        if (!this.inboxes || !Array.isArray(this.inboxes) || this.inboxes.length === 0) {
-            console.log('Нет доступных ящиков для очистки старых писем');
-            return;
-        }
-        
-        console.log(`Проверка и удаление писем старше ${days} дней...`);
-        
-        // Текущая дата минус указанное количество дней
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
-        
-        let deletedCount = 0;
-        
-        // Проходим по всем ящикам
-        for (const inbox of this.inboxes) {
-            try {
-                // Получаем все письма в ящике
-                const emails = await this.api.getEmails(inbox.id);
-                
-                if (!emails || !Array.isArray(emails)) continue;
-                
-                // Фильтруем письма старше указанного срока
-                const oldEmails = emails.filter(email => {
-                    const createdAt = new Date(email.createdAt);
-                    return createdAt < cutoffDate;
-                });
-                
-                // Удаляем старые письма
-                for (const email of oldEmails) {
-                    try {
-                        await this.api.deleteEmail(email.id);
-                        deletedCount++;
-                        console.log(`Удалено старое письмо: ${email.id} (от ${new Date(email.createdAt).toLocaleDateString()})`);
-                    } catch (e) {
-                        console.error(`Ошибка при удалении письма ${email.id}:`, e);
-                    }
-                }
-            } catch (error) {
-                console.error(`Ошибка при обработке ящика ${inbox.id}:`, error);
-            }
-        }
-        
-        if (deletedCount > 0) {
-            console.log(`Автоматически удалено ${deletedCount} устаревших писем`);
-            this.ui.showToast(`Автоматически удалено ${deletedCount} устаревших писем`, 'info');
         }
     }
 }

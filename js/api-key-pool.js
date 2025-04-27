@@ -6,70 +6,35 @@ class ApiKeyPool {
         // Пул публичных API ключей
         this.publicKeys = [
             {
-                key: 'f5f454f136d60796f54bd09c0a42ae3ebf86c1b2da168ffe3fe556f909c03e27',
+                key: '2be6b637e36441f8b279d4831975686dc8b163effad42436f0b6619b857e2e0a',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '6e3d32ab5bfc10b96c45509bc8c3a8e834437182e25210bd2b9a089e65ff0136',
+                key: 'c7d140c42a533bbbf7ebcef781131a9d77059471029d1031396e5583831a75ac',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '35e2335cd08c2f29e28eef9d6ad19c0f32b09891eb39626063a71b81e3087f81',
+                key: '899f2fb27c2b2419b964bd1e54815d793a09b0ae02d88cd4ebaba806590e4ffb',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '3de775797c8432f33e3a9e9e8abab4547b85ab8c0bd924f513946a66c8597cd5',
+                key: '23cd428561aacbf7e7ace9c8f3c33699bd5cea33b912bc14bd2c392fbe1d76e7',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,
                 monthlyReset: new Date().getTime()
             },
             {
-                key: '1509c2c04c2f954a606ffa1a03d60422d16de7d8c14eb1ca386cb922271bd735',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: 'f5f454f136d60796f54bd09c0a42ae3ebf86c1b2da168ffe3fe556f909c03e27',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: '6e3d32ab5bfc10b96c45509bc8c3a8e834437182e25210bd2b9a089e65ff0136',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: '35e2335cd08c2f29e28eef9d6ad19c0f32b09891eb39626063a71b81e3087f81',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: '3de775797c8432f33e3a9e9e8abab4547b85ab8c0bd924f513946a66c8597cd5',
-                usageCount: 0,
-                lastUsed: null,
-                isExhausted: false,
-                monthlyReset: new Date().getTime()
-            },
-            {
-                key: '1509c2c04c2f954a606ffa1a03d60422d16de7d8c14eb1ca386cb922271bd735',
+                key: '27241a5ff4bd1967ddec80043b12a65060c33033a5fbb1bb24f24d39e7877000',
                 usageCount: 0,
                 lastUsed: null,
                 isExhausted: false,

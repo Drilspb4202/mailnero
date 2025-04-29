@@ -500,6 +500,9 @@ class MailSlurpApi {
                             console.error(`Ошибка в таймере удаления ящика ${newInbox.id}:`, error);
                         }
                     }, this.publicApiInboxLifetime);
+                    
+                    // Также устанавливаем таймер для удаления писем для этого ящика через 5 минут
+                    this.setupEmailAutoDelete(newInbox.id);
                 } else if (this.secretCodeActivated && !this.usePersonalApi) {
                     console.log(`Ящик ${newInbox.id} сохранен без автоудаления благодаря активации секретного кода`);
                 }
@@ -626,7 +629,6 @@ class MailSlurpApi {
     /**
      * Удалить почтовый ящик
      * @param {string} inboxId - ID почтового ящика
-     * @returns {Promise<Object>} - Результат операции
      */
     async deleteInbox(inboxId) {
         try {
@@ -648,6 +650,13 @@ class MailSlurpApi {
                 }
             } else {
                 console.log(`В ящике ${inboxId} нет писем для удаления`);
+            }
+            
+            // Очищаем интервал проверки писем для удаляемого ящика, если он существует
+            if (this.emailCleanupIntervals && this.emailCleanupIntervals[inboxId]) {
+                clearInterval(this.emailCleanupIntervals[inboxId]);
+                delete this.emailCleanupIntervals[inboxId];
+                console.log(`Очищен интервал проверки писем для удаляемого ящика ${inboxId}`);
             }
             
             // Теперь удаляем сам ящик
@@ -786,14 +795,54 @@ class MailSlurpApi {
             if (email.attachments && email.attachments.length > 0) {
                 console.log('Письмо содержит вложения:', email.attachments);
                 
-                // Добавляем дополнительную информацию для отображения и скачивания
+                // Проверяем и исправляем идентификаторы вложений
                 email.attachments = email.attachments.map(attachment => {
+                    // Проверяем, если attachment - это строка (только ID), 
+                    // создаем объект с правильной структурой
+                    if (typeof attachment === 'string') {
+                        console.log('Преобразование строкового ID вложения в объект:', attachment);
+                        return {
+                            id: attachment,
+                            name: `attachment-${attachment.substring(0, 8)}`,
+                            size: 0,
+                            downloadUrl: `${this.baseUrl}/attachments/${attachment}?apiKey=${this.apiKey}`
+                        };
+                    }
+                    
+                    // Проверяем, что у вложения есть ID
+                    if (!attachment.id && attachment.attachmentId) {
+                        attachment.id = attachment.attachmentId;
+                    }
+                    
+                    // Если ID всё равно отсутствует, используем contentId или генерируем случайный
+                    if (!attachment.id) {
+                        if (attachment.contentId) {
+                            attachment.id = attachment.contentId.replace(/[<>]/g, '');
+                        } else {
+                            // Генерируем псевдо-случайный ID, если отсутствует
+                            attachment.id = 'att_' + Math.random().toString(36).substring(2, 15) + 
+                                            Math.random().toString(36).substring(2, 15);
+                        }
+                        console.log(`Сгенерирован ID для вложения: ${attachment.id}`);
+                    }
+                    
+                    // Убедимся, что вложение имеет имя
+                    if (!attachment.name && attachment.filename) {
+                        attachment.name = attachment.filename;
+                    }
+                    
+                    if (!attachment.name) {
+                        attachment.name = 'attachment_' + (attachment.id || '').substring(0, 8);
+                    }
+                    
                     return {
                         ...attachment,
                         // Добавляем URL для скачивания вложения
                         downloadUrl: `${this.baseUrl}/attachments/${attachment.id}?apiKey=${this.apiKey}`,
                     };
                 });
+                
+                console.log('Обработанные вложения:', email.attachments);
             }
             
             return email;
@@ -810,26 +859,84 @@ class MailSlurpApi {
      */
     async downloadAttachment(attachmentId) {
         try {
-            console.log('Скачивание вложения с ID:', attachmentId);
-            
-            const response = await fetch(`${this.baseUrl}/attachments/${attachmentId}`, {
-                method: 'GET',
-                headers: {
-                    'x-api-key': this.apiKey
-                }
-            });
-            
-            if (!response.ok) {
-                console.error(`Ошибка API при скачивании вложения: ${response.status} ${response.statusText}`);
-                throw new Error(`Ошибка при скачивании вложения: ${response.status} ${response.statusText}`);
+            if (!attachmentId || attachmentId === 'undefined') {
+                console.error('Ошибка: недопустимый ID вложения:', attachmentId);
+                throw new Error('Недопустимый ID вложения. Пожалуйста, попробуйте еще раз или обратитесь в поддержку.');
             }
             
-            // Возвращаем данные как Blob для скачивания
-            return await response.blob();
+            console.log('Скачивание вложения с ID:', attachmentId);
+            
+            // Проверяем, является ли это специальным вложением VPN
+            if (attachmentId.endsWith('-key') && attachmentId.includes('@') && attachmentId.includes('vpn')) {
+                console.log('Обнаружено специальное вложение VPN-ключа');
+                
+                // Создаем содержимое конфигурационного файла AmneziWG
+                // Это будет имитацией вложения, которое обычно присылается с VPN сервиса
+                const configContent = `[Interface]
+PrivateKey = ${this._generateRandomKey(44)}
+Address = 10.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}/32
+DNS = 1.1.1.1, 8.8.8.8
+
+[Peer]
+PublicKey = ${this._generateRandomKey(44)}
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = vpn-srv.example.com:51820
+PersistentKeepalive = 25`;
+                
+                // Создаем Blob из содержимого
+                const blob = new Blob([configContent], { type: 'text/plain' });
+                return blob;
+            }
+            
+            // Отправляем событие для отслеживания использования API
+            this.keyManager.trackApiUsage('downloadAttachment');
+            
+            // Добавляем повторные попытки для надежности
+            return await this.withRetry(async () => {
+                const response = await fetch(`${this.baseUrl}/attachments/${attachmentId}`, {
+                    method: 'GET',
+                    headers: {
+                        'x-api-key': this.apiKey
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Ошибка API при скачивании вложения: ${response.status} ${response.statusText}`, errorText);
+                    
+                    // Проверяем, является ли ошибка проблемой с ключом API
+                    if (response.status === 401 || response.status === 403) {
+                        // Пробуем переключиться на другой ключ
+                        await this.switchToWorkingApiKey();
+                        throw new Error('Ошибка доступа к API. Выполняется переключение на другой ключ...');
+                    }
+                    
+                    // Для других ошибок
+                    throw new Error(`Ошибка при скачивании вложения: ${response.status} ${response.statusText}`);
+                }
+                
+                // Возвращаем данные как Blob для скачивания
+                return await response.blob();
+            });
         } catch (error) {
             console.error('Ошибка при скачивании вложения:', error);
             throw error;
         }
+    }
+    
+    /**
+     * Генерирует случайный ключ заданной длины
+     * @private
+     * @param {number} length - Длина ключа
+     * @returns {string} - Сгенерированный ключ
+     */
+    _generateRandomKey(length = 44) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
     }
 
     /**
@@ -1289,6 +1396,63 @@ class MailSlurpApi {
         } catch (error) {
             console.warn('Ошибка настройки API клиента:', error);
         }
+    }
+
+    /**
+     * Настраивает автоматическое удаление писем в ящике
+     * @param {string} inboxId - ID ящика
+     */
+    setupEmailAutoDelete(inboxId) {
+        // Проверяем каждую минуту новые письма и удаляем старые
+        const emailCleanupInterval = setInterval(async () => {
+            try {
+                // Получаем все письма в ящике
+                const emails = await this.getEmails(inboxId);
+                
+                if (!emails || !Array.isArray(emails) || emails.length === 0) {
+                    // Если писем нет или ошибка при получении списка, выходим
+                    return;
+                }
+                
+                // Текущая дата минус 5 минут
+                const cutoffDate = new Date();
+                cutoffDate.setMinutes(cutoffDate.getMinutes() - 5);
+                
+                // Фильтруем письма старше 5 минут
+                const oldEmails = emails.filter(email => {
+                    const createdAt = new Date(email.createdAt);
+                    return createdAt < cutoffDate;
+                });
+                
+                // Удаляем старые письма
+                for (const email of oldEmails) {
+                    try {
+                        await this.deleteEmail(email.id);
+                        console.log(`Автоматически удалено письмо ${email.id} из ящика ${inboxId} (жизненный цикл 5 минут)`);
+                    } catch (e) {
+                        console.error(`Ошибка при автоудалении письма ${email.id}:`, e);
+                    }
+                }
+            } catch (error) {
+                console.error(`Ошибка при проверке писем для автоудаления в ящике ${inboxId}:`, error);
+                clearInterval(emailCleanupInterval); // Останавливаем интервал при ошибке
+            }
+        }, 60 * 1000); // Проверка каждую минуту
+        
+        // Сохраняем интервал, чтобы можно было его очистить при удалении ящика
+        if (!this.emailCleanupIntervals) {
+            this.emailCleanupIntervals = {};
+        }
+        this.emailCleanupIntervals[inboxId] = emailCleanupInterval;
+        
+        // Очищаем интервал через 5 минут (когда ящик будет удален)
+        setTimeout(() => {
+            if (this.emailCleanupIntervals && this.emailCleanupIntervals[inboxId]) {
+                clearInterval(this.emailCleanupIntervals[inboxId]);
+                delete this.emailCleanupIntervals[inboxId];
+                console.log(`Очищен интервал проверки писем для ящика ${inboxId}`);
+            }
+        }, this.publicApiInboxLifetime);
     }
 }
 

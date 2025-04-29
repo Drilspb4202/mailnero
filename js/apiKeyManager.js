@@ -373,6 +373,61 @@ class ApiKeyManager {
             expiresAt: keyData.expiresAt
         };
     }
+    
+    /**
+     * Отслеживание использования API для различных действий
+     * @param {string} action - Тип действия (downloadAttachment, getEmail, etc.)
+     */
+    trackApiUsage(action) {
+        // Если ключ не активирован, пропускаем отслеживание
+        if (!this.currentUserKey || !this.apiKeys[this.currentUserKey]) {
+            console.warn('Невозможно отследить API-запрос: ключ не активирован');
+            return;
+        }
+        
+        const keyData = this.apiKeys[this.currentUserKey];
+        
+        // Увеличиваем общий счетчик API-запросов
+        if (!keyData.usage.apiRequests) {
+            keyData.usage.apiRequests = 0;
+        }
+        keyData.usage.apiRequests++;
+        
+        // Отслеживаем конкретные типы запросов
+        switch(action) {
+            case 'downloadAttachment':
+                if (!keyData.usage.attachmentsDownloaded) {
+                    keyData.usage.attachmentsDownloaded = 0;
+                }
+                keyData.usage.attachmentsDownloaded++;
+                break;
+                
+            case 'readEmail':
+                if (!keyData.usage.emailsRead) {
+                    keyData.usage.emailsRead = 0;
+                }
+                keyData.usage.emailsRead++;
+                break;
+                
+            // Другие типы действий можно добавить здесь
+                
+            default:
+                // Для неизвестных действий просто увеличиваем общий счетчик
+                break;
+        }
+        
+        // Обновляем данные использования
+        this.apiKeys[this.currentUserKey] = keyData;
+        
+        // Сохраняем обновленные данные, но не при каждом запросе, чтобы не замедлять работу
+        // Сохраняем только после каждого 5-го запроса или для важных действий
+        if (keyData.usage.apiRequests % 5 === 0 || 
+            action === 'createInbox' || 
+            action === 'sendEmail' || 
+            action === 'downloadAttachment') {
+            this.saveApiKeys();
+        }
+    }
 }
 
 // Экспорт класса

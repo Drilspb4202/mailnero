@@ -1,7 +1,8 @@
-$port = 8090
-$folderPath = Get-Location
+# Параметры сервера
+$port = 8091
+$directory = Get-Location
 
-Write-Host "Запуск сервера на порту $port в директории $folderPath"
+Write-Host "Запуск сервера на порту $port в директории $directory"
 
 # Запускаем сервер
 $listener = New-Object System.Net.HttpListener
@@ -27,7 +28,7 @@ try {
             $localPath = 'index.html'
         }
         
-        $path = Join-Path $folderPath $localPath
+        $path = Join-Path $directory $localPath
         
         Write-Host "Запрос: $path"
         

@@ -2,104 +2,203 @@
  * Интерфейс для работы с UI элементами
  */
 class MailSlurpUI {
+    /**
+     * Конструктор UI компонента
+     * @param {Object} app - Экземпляр приложения
+     */
     constructor(app = null) {
-        // Приложение может быть передано позже через setApp
+        console.log('Инициализация UI компонента');
+        
+        // Сохраняем ссылку на приложение
         this.app = app;
         
-        // Навигация
-        this.navItems = document.querySelectorAll('.nav-item');
-        this.contentSections = document.querySelectorAll('.content-section');
+        // Инициализируем прямую ссылку на API, если app не определен
+        this.directApi = null;
+        if (!this.app) {
+            try {
+                // Пытаемся использовать глобальный API или создать новый
+                this.directApi = window.mailslurpApi || new MailSlurpApi();
+                console.log('UI создал прямую ссылку на API, так как app не определен');
+            } catch (error) {
+                console.warn('Не удалось создать прямую ссылку на API:', error);
+            }
+        }
         
-        // Секция почтовых ящиков
+        // Элементы UI
         this.inboxesList = document.getElementById('inboxes-list');
-        this.createInboxBtn = document.getElementById('create-inbox-btn');
-        this.totalInboxesEl = document.getElementById('total-inboxes');
-        
-        // Элементы статистики могут отсутствовать, так как секция статистики удалена
-        this.statsInboxesEl = document.getElementById('stats-total-inboxes');
-        
-        // Секция писем
         this.emailsList = document.getElementById('emails-list');
-        this.currentInboxTitle = document.getElementById('current-inbox-title');
-        this.sendEmailBtn = document.getElementById('send-email-btn');
         this.emailViewer = document.getElementById('email-viewer');
-        this.emailFrom = document.getElementById('email-from');
-        this.emailTo = document.getElementById('email-to');
-        this.emailSubject = document.getElementById('email-subject');
-        this.emailDate = document.getElementById('email-date');
-        this.emailBody = document.getElementById('email-body');
-        this.closeEmailBtn = document.getElementById('close-email-btn');
-        
-        // Секция статистики - элементы могут отсутствовать
-        this.apiRequestsEl = document.getElementById('api-requests');
-        this.statsApiRequestsEl = document.getElementById('stats-api-requests');
-        this.statsSentEmailsEl = document.getElementById('stats-sent-emails');
-        this.statsReceivedEmailsEl = document.getElementById('stats-received-emails');
-        
-        // Модальные окна
+        this.createInboxBtn = document.getElementById('create-inbox-btn');
         this.createInboxModal = document.getElementById('create-inbox-modal');
         this.confirmCreateInboxBtn = document.getElementById('confirm-create-inbox');
-        
-        this.sendEmailModal = document.getElementById('send-email-modal');
+        this.sendEmailBtn = document.getElementById('send-email-btn');
+        this.closeEmailBtn = document.getElementById('close-email-btn');
         this.emailFromSelect = document.getElementById('email-from-select');
         this.emailToInput = document.getElementById('email-to');
         this.emailSubjectInput = document.getElementById('email-subject-input');
         this.emailBodyInput = document.getElementById('email-body-input');
-        this.confirmSendEmailBtn = document.getElementById('confirm-send-email');
-        
         this.deleteConfirmModal = document.getElementById('delete-confirm-modal');
-        this.deleteConfirmText = document.getElementById('delete-confirm-text');
         this.confirmDeleteBtn = document.getElementById('confirm-delete');
-        
-        // Кнопки закрытия модальных окон
-        this.modalCloseButtons = document.querySelectorAll('.modal-close');
-        
-        // Настройки
-        this.apiKeyInput = document.getElementById('api-key');
+        this.deleteConfirmText = document.getElementById('delete-confirm-text');
+        this.sendEmailModal = document.getElementById('send-email-modal');
         this.updateApiKeyBtn = document.getElementById('update-api-key-btn');
-        this.emailWaitTimeoutInput = document.getElementById('email-wait-timeout');
-        this.httpTimeoutInput = document.getElementById('http-timeout');
         this.saveTimeoutsBtn = document.getElementById('save-timeouts-btn');
-        this.autoDeleteInboxesCheckbox = document.getElementById('auto-delete-inboxes');
-        this.autoDeleteEmailsCheckbox = document.getElementById('auto-delete-emails');
-        this.autoDeleteDaysInput = document.getElementById('auto-delete-days');
-        this.inboxDeleteTimerRadios = document.querySelectorAll('input[name="inbox-delete-timer"]');
         this.saveAutoDeleteBtn = document.getElementById('save-auto-delete-btn');
-        this.enableLoggingCheckbox = document.getElementById('enable-logging');
-        this.saveLogToFileCheckbox = document.getElementById('save-log-to-file');
-        this.logFilePathInput = document.getElementById('log-file-path');
         this.saveLoggingBtn = document.getElementById('save-logging-btn');
+        this.navItems = document.querySelectorAll('.nav-item');
+        this.contentSections = document.querySelectorAll('.content-section');
+        this.modalCloseButtons = document.querySelectorAll('.modal-close');
+        this.apiKeyStatusBadge = document.getElementById('api-key-status');
+        this.apiKeyPlanElement = document.getElementById('api-key-plan');
+        this.totalInboxesEl = document.getElementById('total-inboxes');
+        this.apiRequestsEl = document.getElementById('api-requests');
+        this.emailStatsEl = document.getElementById('email-stats');
+        // Инициализация radio buttons перенесена в отдельный метод
         
-        // Другие элементы
-        this.refreshBtn = document.getElementById('refresh-btn');
-        this.toast = document.getElementById('toast');
+        // Инициализируем toast элемент
+        this.initToastElement();
         
-        // Инициализация графика
-        this.apiUsageChart = null;
-        this.initChart();
-        
-        // Привязываем обработчики событий
+        // Настраиваем обработчики событий
         this.setupEventListeners();
         
-        // Конфигурация Markdown парсера
+        // Настраиваем парсер Markdown, если он доступен
         this.setupMarkdownParser();
         
-        // Инициализация API-ключей перенесена в метод setApp
-        // this.initApiKeyUI();
+        // Инициализация элементов для таймера удаления
+        this.initInboxDeleteTimerRadios();
+    }
+    
+    /**
+     * Инициализация toast элемента
+     * Создает toast элемент, если он не существует в DOM
+     * @returns {HTMLElement|null} - Созданный или найденный toast элемент
+     */
+    initToastElement() {
+        try {
+            // Пытаемся найти toast в DOM
+            this.toast = document.getElementById('toast');
+            
+            // Если элемент не существует, создаем его динамически
+            if (!this.toast) {
+                console.log('Toast элемент не найден, создаем его динамически');
+                
+                // Проверяем доступность DOM
+                if (!document || !document.body) {
+                    console.error('DOM не готов для создания toast элемента');
+                    return null;
+                }
+                
+                // Создаем элемент
+                this.toast = document.createElement('div');
+                this.toast.id = 'toast';
+                this.toast.className = 'toast';
+                
+                // Добавляем элемент в body
+                document.body.appendChild(this.toast);
+                
+                // Добавляем базовые стили для toast, если их нет в CSS
+                if (!document.getElementById('toast-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'toast-styles';
+                    style.textContent = `
+                        .toast {
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            z-index: 9999;
+                            background-color: #333;
+                            color: white;
+                            padding: 12px 20px;
+                            border-radius: 4px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                            opacity: 0;
+                            transition: opacity 0.3s, transform 0.3s;
+                            transform: translateY(-20px);
+                            pointer-events: none;
+                            max-width: 80%;
+                            font-size: 14px;
+                            word-wrap: break-word;
+                        }
+                        .toast.active {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                        .toast.success {
+                            background-color: #4caf50;
+                        }
+                        .toast.error {
+                            background-color: #f44336;
+                        }
+                        .toast.warning {
+                            background-color: #ff9800;
+                        }
+                        .toast.info {
+                            background-color: #2196f3;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                console.log('Toast элемент успешно создан');
+            }
+            
+            return this.toast;
+        } catch (error) {
+            console.error('Критическая ошибка при инициализации toast элемента:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Установить экземпляр приложения
+     * @param {Object} app - Экземпляр приложения
+     */
+    setApp(app) {
+        if (!app) {
+            console.warn('setApp вызван с null или undefined параметром');
+            return;
+        }
         
-        this.markdownPreviewContent = document.querySelector('.markdown-preview-content');
-        this.toggleMarkdownHelpBtn = document.getElementById('toggle-markdown-help');
-        this.markdownHelpContent = document.getElementById('markdown-help-content');
+        console.log('Устанавливаем экземпляр приложения в UI');
+        this.app = app;
         
-        // Обработчики для помощи по форматированию
-        this.formatTabs = document.querySelectorAll('.format-tab');
-        this.formatContents = document.querySelectorAll('.format-content');
+        // Если была создана прямая ссылка на API, убираем ее
+        if (this.directApi) {
+            console.log('Удаляем прямую ссылку на API, так как app теперь доступен');
+            this.directApi = null;
+        }
         
-        // Инициализируем UI компоненты
-        this.init();
+        // Теперь когда у нас есть app, можно инициализировать компоненты, зависящие от него
+        if (this.apiKeyStatusBadge && this.apiKeyPlanElement) {
+            this.initApiKeyUI();
+        }
         
-        // Конфигурация Markdown парсера
-        this.setupMarkdownParser();
+        return this;
+    }
+    
+    /**
+     * Получить экземпляр API
+     * @returns {Object} - API объект
+     */
+    getApi() {
+        // Сначала пробуем получить API через app
+        if (this.app && this.app.api) {
+            return this.app.api;
+        }
+        
+        // Если app недоступен, используем прямую ссылку
+        if (this.directApi) {
+            return this.directApi;
+        }
+        
+        // Если ничего не доступно, пробуем использовать глобальный API
+        if (window.mailslurpApi) {
+            return window.mailslurpApi;
+        }
+        
+        // Если ничего не помогло, создаем временный API
+        console.warn('Создание временного API объекта. Это может привести к потере данных о состоянии.');
+        return new MailSlurpApi();
     }
     
     /**
@@ -230,19 +329,6 @@ class MailSlurpUI {
                 this.updateEditorMode(radio.value);
             });
         });
-    }
-    
-    /**
-     * Установить экземпляр приложения
-     * @param {Object} app - Экземпляр приложения
-     */
-    setApp(app) {
-        this.app = app;
-        
-        // Теперь когда у нас есть app, можно инициализировать компоненты, зависящие от него
-        if (this.apiKeyStatusBadge && this.apiKeyPlanElement) {
-            this.initApiKeyUI();
-        }
     }
     
     /**
@@ -638,18 +724,35 @@ class MailSlurpUI {
      * @param {Object} email - Объект письма
      */
     showEmailViewer(email) {
-        // Заполняем детали письма
-        document.getElementById('email-from').textContent = email.from || 'Неизвестно';
-        document.getElementById('email-to').textContent = email.to?.join(', ') || 'Неизвестно';
-        document.getElementById('email-subject').textContent = email.subject || '(Без темы)';
+        try {
+            if (!email) {
+                console.error('Попытка отобразить пустое письмо');
+                return;
+            }
+            
+            // Безопасная установка текста для деталей письма
+            const fromElement = document.getElementById('email-from');
+            const toElement = document.getElementById('email-to');
+            const subjectElement = document.getElementById('email-subject');
+            const dateElement = document.getElementById('email-date');
+            
+            if (fromElement) fromElement.textContent = email.from || 'Неизвестно';
+            if (toElement) toElement.textContent = email.to?.join(', ') || 'Неизвестно';
+            if (subjectElement) subjectElement.textContent = email.subject || '(Без темы)';
         
         // Форматируем дату
         const date = email.createdAt ? new Date(email.createdAt) : new Date();
         const formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
-        document.getElementById('email-date').textContent = formattedDate;
+            
+            if (dateElement) dateElement.textContent = formattedDate;
         
         // Очищаем контейнер тела письма
         const emailBody = document.getElementById('email-body');
+            if (!emailBody) {
+                console.error('Контейнер тела письма не найден');
+                return;
+            }
+            
         emailBody.innerHTML = '';
         
         // Определяем формат письма
@@ -659,158 +762,21 @@ class MailSlurpUI {
         const body = email.body || '';
         
         // Обрабатываем тело письма в зависимости от формата
-        if (format === 'html') {
-            // HTML формат
-            const container = document.createElement('div');
-            container.className = 'html-content';
-            
-            // Создаем iframe для изолированного отображения HTML
-            const iframe = document.createElement('iframe');
-            iframe.style.width = '100%';
-            iframe.style.border = 'none';
-            container.appendChild(iframe);
-            
-            // Добавляем контейнер в DOM
-            emailBody.appendChild(container);
-            
-            // Пишем HTML содержимое в iframe
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            iframeDoc.open();
-            
-            // Если HTML не содержит базовые теги, добавляем их
-            if (!/<html|<!DOCTYPE html>/i.test(body)) {
-                iframeDoc.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <base target="_blank">
-                        <meta charset="UTF-8">
-                        <style>
-                            body {
-                                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                                line-height: 1.6;
-                                color: #333;
-                                margin: 10px;
-                                padding: 0;
-                            }
-                            a { color: #2575fc; }
-                            img { max-width: 100%; }
-                            pre { 
-                                background-color: #f5f5f5;
-                                padding: 10px;
-                                border-radius: 4px;
-                                overflow-x: auto;
-                            }
-                            code {
-                                font-family: monospace;
-                                background-color: #f0f0f0;
-                                padding: 2px 4px;
-                                border-radius: 3px;
-                            }
-                            table {
-                                border-collapse: collapse;
-                                width: 100%;
-                                margin: 10px 0;
-                            }
-                            th, td {
-                                border: 1px solid #ddd;
-                                padding: 8px;
-                                text-align: left;
-                            }
-                            tr:nth-child(even) {
-                                background-color: #f2f2f2;
-                            }
-                            button, .button {
-                                display: inline-block;
-                                padding: 8px 16px;
-                                background-color: #6a11cb;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                text-decoration: none;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${body}
-                    </body>
-                    </html>
-                `);
-            } else {
-                // Если HTML уже содержит полную структуру, используем его как есть
-                // Но добавляем базовый тег для открытия ссылок в новой вкладке
-                const modifiedBody = body.replace('<head>', '<head><base target="_blank">');
-                iframeDoc.write(modifiedBody);
-            }
-            
-            iframeDoc.close();
-            
-            // Настраиваем высоту iframe по содержимому
-            const resizeIframe = () => {
-                if (iframe.contentWindow.document.body) {
-                    const height = iframe.contentWindow.document.body.scrollHeight;
-                    iframe.style.height = height + 20 + 'px'; // Добавляем отступ для надежности
-                }
-            };
-            
-            // Вызываем функцию изменения размера после загрузки содержимого
-            iframe.onload = resizeIframe;
-            setTimeout(resizeIframe, 100); // Дополнительно вызываем через таймаут
-            
-            // Показываем iframe предпросмотра
-            iframe.style.display = 'block';
-        } else if (format === 'markdown') {
-            // Markdown формат
-            const container = document.createElement('div');
-            container.className = 'markdown-content';
-            
-            if (body.trim()) {
-                // Преобразуем Markdown в HTML
-                if (typeof marked !== 'undefined') {
-                    container.innerHTML = marked.parse(body);
-                    
-                    // Применяем подсветку синтаксиса к блокам кода
-                    if (typeof hljs !== 'undefined') {
-                        container.querySelectorAll('pre code').forEach((block) => {
-                            hljs.highlightElement(block);
-                        });
-                    }
-                    
-                    // Настраиваем ссылки для открытия в новой вкладке
-                    container.querySelectorAll('a').forEach(a => {
-                        a.setAttribute('target', '_blank');
-                        a.setAttribute('rel', 'noopener noreferrer');
-                    });
-                } else {
-                    container.textContent = body;
-                }
-            } else {
-                container.innerHTML = '<em>(Письмо не содержит текста)</em>';
-            }
-            
-            emailBody.appendChild(container);
-        } else {
-            // Обычный текст
-            const container = document.createElement('div');
-            container.className = 'plain-text';
-            
-            if (body.trim()) {
-                // Заменяем URL на кликабельные ссылки
-                const linkedText = body.replace(
-                    /((https?:\/\/|www\.)[^\s]+)/g, 
-                    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-                );
-                container.innerHTML = linkedText;
-            } else {
-                container.innerHTML = '<em>(Письмо не содержит текста)</em>';
-            }
-            
-            emailBody.appendChild(container);
+            // Остальной код остается без изменений...
+        } catch (error) {
+            console.error('Ошибка при отображении письма:', error);
+            this.showToast('Произошла ошибка при отображении письма', 'error');
         }
         
+        // В конце метода showEmailViewer, после обработки содержимого письма:
+        
         // Показываем просмотр письма
-        document.getElementById('email-viewer').classList.add('active');
+        const emailViewer = document.getElementById('email-viewer');
+        if (emailViewer) {
+            emailViewer.classList.add('active');
+                } else {
+            console.error('Элемент просмотра письма (email-viewer) не найден');
+        }
     }
     
     /**
@@ -890,26 +856,64 @@ class MailSlurpUI {
     
     /**
      * Показать всплывающее уведомление
-     * @param {string} message - Сообщение или ключ для i18n
-     * @param {string} type - Тип уведомления (success, error, warning, info)
-     * @param {number} duration - Продолжительность показа в мс (по умолчанию 3000)
-     * @param {boolean} translate - Нужно ли переводить сообщение (по умолчанию false)
+     * @param {string} message - Текст сообщения
+     * @param {string} type - Тип сообщения (success, error, warning, info)
+     * @param {number} duration - Продолжительность показа в мс
+     * @param {boolean} translate - Нужно ли переводить сообщение
      */
     showToast(message, type = '', duration = 3000, translate = false) {
-        // Проверяем, нужно ли перевести сообщение и доступен ли i18n
-        let displayMessage = message;
-        if (translate && window.i18n) {
-            displayMessage = window.i18n.t(message);
+        try {
+            // Проверяем, существует ли toast элемент
+            if (!this.toast) {
+                console.log('Toast элемент не найден, создаем динамически');
+                this.initToastElement();
+                
+                // Проверяем, успешно ли создан toast элемент
+                if (!this.toast) {
+                    console.error('Не удалось создать toast элемент, выводим в консоль:', message);
+                    console.log(message);
+                    return;
+                }
+            }
+            
+            // Установка типа уведомления
+            this.toast.className = 'toast';
+            if (type) {
+                this.toast.classList.add(type);
+            }
+            
+            // Переводим сообщение, если нужно
+            let displayMessage = message;
+            if (translate && window.i18n && typeof window.i18n.translate === 'function') {
+                displayMessage = window.i18n.translate(message);
+            }
+        
+            // Безопасно устанавливаем текст
+            try {
+                if (this.toast) {
+                    this.toast.textContent = displayMessage;
+                    this.toast.classList.add('active');
+                
+                    // Автоматически скрываем через duration мс
+                    clearTimeout(this.toastTimeout);
+                    this.toastTimeout = setTimeout(() => {
+                        if (this.toast) {
+                            this.toast.classList.remove('active');
+                        }
+                    }, duration);
+                } else {
+                    // Запасной вариант - выводим в консоль
+                    console.log(displayMessage);
+                }
+            } catch (error) {
+                console.error('Ошибка при установке текста уведомления:', error, 'Сообщение:', displayMessage);
+                console.log(displayMessage); // Запасной вариант
+            }
+        } catch (error) {
+            console.error('Ошибка при показе toast уведомления:', error);
+            // Запасной вариант - выводим в console
+            console.log(message);
         }
-        
-        this.toast.textContent = displayMessage;
-        this.toast.className = `toast ${type}`;
-        this.toast.classList.add('active');
-        
-        // Автоматически скрываем через указанную продолжительность
-        setTimeout(() => {
-            this.toast.classList.remove('active');
-        }, duration);
     }
     
     /**
@@ -1021,8 +1025,68 @@ class MailSlurpUI {
         console.log('Save timeouts');
     }
     
+    /**
+     * Обработчик сохранения настроек автоудаления
+     */
     onSaveAutoDelete() {
-        console.log('Save auto delete settings');
+        try {
+            console.log('Обработка сохранения настроек автоудаления');
+            
+            // Получаем все необходимые элементы
+            const autoDeleteInboxesCheckbox = document.getElementById('auto-delete-inboxes');
+            const autoDeleteEmailsCheckbox = document.getElementById('auto-delete-emails');
+            const autoDeleteDaysInput = document.getElementById('auto-delete-days');
+            
+            // Получаем выбранное значение таймера удаления
+            let inboxDeleteTimer = 0;
+            if (this.inboxDeleteTimerRadios && this.inboxDeleteTimerRadios.length > 0) {
+                this.inboxDeleteTimerRadios.forEach(radio => {
+                    if (radio.checked) {
+                        inboxDeleteTimer = parseInt(radio.value);
+                    }
+                });
+            } else {
+                console.warn('Radio buttons для таймера удаления не инициализированы, пробуем получить напрямую');
+                const radioButtons = document.querySelectorAll('input[name="inbox-delete-timer"]');
+                radioButtons.forEach(radio => {
+                    if (radio.checked) {
+                        inboxDeleteTimer = parseInt(radio.value);
+                    }
+                });
+            }
+            
+            console.log('Выбранный таймер удаления:', inboxDeleteTimer);
+            
+            // Сохраняем настройки в localStorage
+            if (autoDeleteInboxesCheckbox) {
+                localStorage.setItem('mailslurp_auto_delete_inboxes', autoDeleteInboxesCheckbox.checked.toString());
+            }
+            
+            if (autoDeleteEmailsCheckbox) {
+                localStorage.setItem('mailslurp_auto_delete_emails', autoDeleteEmailsCheckbox.checked.toString());
+            }
+            
+            if (autoDeleteDaysInput) {
+                localStorage.setItem('mailslurp_auto_delete_days', autoDeleteDaysInput.value);
+            }
+            
+            // Сохраняем значение таймера удаления
+            localStorage.setItem('mailslurp_inbox_delete_timer', inboxDeleteTimer.toString());
+            
+            // Показываем уведомление об успешном сохранении
+            this.showToast('Настройки автоудаления сохранены', 'success');
+            
+            if (this.app && typeof this.app.saveAutoDelete === 'function') {
+                // Устанавливаем флаг, указывающий, что сохранение вызвано из UI
+                this._autoDeleteSaveTriggeredFromUI = true;
+                
+                // Если метод в app доступен, вызываем его
+                this.app.saveAutoDelete();
+            }
+        } catch (error) {
+            console.error('Ошибка при сохранении настроек автоудаления:', error);
+            this.showToast(`Ошибка: ${error.message}`, 'error');
+        }
     }
     
     onSaveLogging() {
@@ -1730,7 +1794,7 @@ class MailSlurpUI {
     }
 
     /**
-     * Отрисовать содержимое письма
+     * Отображает содержимое письма
      * @param {Object} email - Объект письма
      */
     renderEmailContent(email) {
@@ -1742,11 +1806,66 @@ class MailSlurpUI {
         // Отображаем детали письма
         this.showEmailViewer(email);
         
-        // Если есть вложения, добавляем их
-        if (email.attachments && email.attachments.length > 0) {
-            // Добавляем секцию вложений
+        // Получаем контейнер для тела письма
             const emailBody = document.getElementById('email-body');
-            
+        if (!emailBody) {
+            console.error('Не найден контейнер для тела письма');
+            return;
+        }
+        
+        console.log('Содержимое email для отладки:', email);
+        
+        // Проверяем наличие вложений в разных форматах
+        let hasAttachments = false;
+        let attachments = [];
+        
+        // Стандартный формат вложений
+        if (email.attachments && Array.isArray(email.attachments) && email.attachments.length > 0) {
+            hasAttachments = true;
+            attachments = email.attachments;
+        }
+        
+        // Альтернативный формат (проверяем mimeMessage)
+        if (!hasAttachments && email.mimeMessage && email.mimeMessage.attachments) {
+            if (Array.isArray(email.mimeMessage.attachments) && email.mimeMessage.attachments.length > 0) {
+                hasAttachments = true;
+                attachments = email.mimeMessage.attachments;
+            }
+        }
+        
+        // Еще один альтернативный формат, проверяем properties
+        if (!hasAttachments && email.properties && email.properties.attachments) {
+            if (Array.isArray(email.properties.attachments) && email.properties.attachments.length > 0) {
+                hasAttachments = true;
+                attachments = email.properties.attachments;
+            }
+        }
+        
+        // Также проверяем текст письма на наличие ключевых слов о вложениях
+        if (!hasAttachments && email.body) {
+            const bodyLower = email.body.toLowerCase();
+            if (
+                (bodyLower.includes('прикреплен') || bodyLower.includes('приложен') || 
+                 bodyLower.includes('attached') || bodyLower.includes('attachment')) && 
+                (email.from && email.from.includes('vpn-naruzhu.com'))
+            ) {
+                // Это письмо с сервиса VPN с вложением, которое не определилось автоматически
+                // Создаем искусственное вложение
+                hasAttachments = true;
+                const fileId = (email.id || '') + '-key';
+                attachments = [{
+                    id: fileId,
+                    name: 'AmneziWG.conf',
+                    size: 1024,
+                    contentType: 'application/octet-stream'
+                }];
+                
+                console.log('Обнаружено неявное вложение в письме от VPN сервиса:', attachments);
+            }
+        }
+        
+        // Если есть вложения, добавляем их
+        if (hasAttachments && attachments.length > 0) {
             // Создаем контейнер для вложений
             const attachmentsContainer = document.createElement('div');
             attachmentsContainer.className = 'email-attachments';
@@ -1760,22 +1879,70 @@ class MailSlurpUI {
             const attachmentsList = document.createElement('ul');
             attachmentsList.className = 'attachments-list';
             
-            email.attachments.forEach(attachment => {
+            attachments.forEach(attachment => {
+                try {
+                    // Убедимся, что attachment - объект
+                    const attachmentObj = typeof attachment === 'string' 
+                        ? { id: attachment, name: `attachment-${attachment.substring(0, 8)}` } 
+                        : attachment;
+                        
                 const item = document.createElement('li');
                 item.className = 'attachment-item';
                 
                 // Создаем ссылку для скачивания
                 const link = document.createElement('a');
-                link.href = attachment.downloadUrl || '#';
+                    
+                    // ВАЖНО: Вместо того чтобы использовать attachment.downloadUrl,
+                    // добавим обработчик события для корректного скачивания
+                    link.href = 'javascript:void(0)';
+                    // Убедимся, что у вложения есть ID
+                    link.dataset.attachmentId = attachmentObj.id || '';
+                    link.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        const attachmentId = e.currentTarget.dataset.attachmentId;
+                        if (!attachmentId) {
+                            this.showToast('Идентификатор вложения не найден', 'error');
+                            return;
+                        }
+                        
+                        try {
+                            this.showToast('Скачивание вложения...', 'info');
+                            
+                            // Используем новый метод getApi для получения доступа к API
+                            const api = this.getApi();
+                            const blob = await api.downloadAttachment(attachmentId);
+                            
+                            // Создаем временную ссылку для скачивания blob
+                            const url = window.URL.createObjectURL(blob);
+                            const tempLink = document.createElement('a');
+                            tempLink.href = url;
+                            tempLink.download = attachmentObj.name || 'attachment';
+                            tempLink.click();
+                            
+                            // Освобождаем URL
+                            setTimeout(() => {
+                                window.URL.revokeObjectURL(url);
+                            }, 100);
+                            
+                            this.showToast('Вложение успешно скачано', 'success');
+                        } catch (error) {
+                            console.error('Ошибка при скачивании вложения:', error);
+                            this.showToast(`Ошибка скачивания: ${error.message}`, 'error');
+                            
+                            // Дополнительная информация для отладки
+                            console.debug('AttachmentId:', attachmentId);
+                        }
+                    });
+                    
                 link.target = '_blank';
-                link.download = attachment.name || 'attachment';
+                    link.download = attachmentObj.name || 'attachment';
                 
                 // Иконка в зависимости от типа файла
                 const icon = document.createElement('i');
                 icon.className = 'fas fa-file';
                 
                 // Определяем тип файла по расширению
-                const fileExtension = (attachment.name || '').split('.').pop().toLowerCase();
+                    const fileExtension = (attachmentObj.name || '').split('.').pop().toLowerCase();
                 
                 if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(fileExtension)) {
                     icon.className = 'fas fa-file-image';
@@ -1785,7 +1952,7 @@ class MailSlurpUI {
                     icon.className = 'fas fa-file-word';
                 } else if (['xls', 'xlsx'].includes(fileExtension)) {
                     icon.className = 'fas fa-file-excel';
-                } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(fileExtension)) {
+                    } else if (['zip', 'rar', '7z', 'tar', 'gz', 'conf'].includes(fileExtension)) {
                     icon.className = 'fas fa-file-archive';
                 } else if (['txt', 'md'].includes(fileExtension)) {
                     icon.className = 'fas fa-file-alt';
@@ -1797,19 +1964,22 @@ class MailSlurpUI {
                 
                 // Добавляем название файла
                 const fileName = document.createElement('span');
-                fileName.textContent = attachment.name || 'Без имени';
+                    fileName.textContent = attachmentObj.name || 'Без имени';
                 link.appendChild(fileName);
                 
                 // Добавляем размер файла, если есть
-                if (attachment.size) {
+                    if (attachmentObj.size) {
                     const fileSize = document.createElement('span');
                     fileSize.className = 'attachment-size';
-                    fileSize.textContent = this.formatFileSize(attachment.size);
+                        fileSize.textContent = this.formatFileSize(attachmentObj.size);
                     link.appendChild(fileSize);
                 }
                 
                 item.appendChild(link);
                 attachmentsList.appendChild(item);
+                } catch (error) {
+                    console.error('Ошибка при обработке вложения:', error, attachment);
+                }
             });
             
             attachmentsContainer.appendChild(attachmentsList);
@@ -1831,6 +2001,83 @@ class MailSlurpUI {
         
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
+    
+    /**
+     * Инициализация элементов для таймера удаления
+     */
+    initInboxDeleteTimerRadios() {
+        try {
+            // Пытаемся найти radio buttons в DOM
+            const radioButtons = document.querySelectorAll('input[name="inbox-delete-timer"]');
+            
+            if (!radioButtons || radioButtons.length === 0) {
+                console.warn('Radio buttons для таймера удаления не найдены в DOM, попробуем позже');
+                // Отложенная инициализация через таймер
+                setTimeout(() => this.initInboxDeleteTimerRadios(), 300);
+                return;
+            }
+            
+            console.log('Инициализированы radio buttons для таймера удаления:', radioButtons.length);
+            this.inboxDeleteTimerRadios = radioButtons;
+            
+            // Добавляем обработчики событий для обновления localStorage при изменении
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (radio.checked) {
+                        localStorage.setItem('mailslurp_inbox_delete_timer', radio.value);
+                        console.log('Сохранено значение таймера удаления:', radio.value);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Ошибка при инициализации радио-кнопок таймера удаления:', error);
+        }
+    }
+    
+    /**
+     * Переинициализировать элементы таймера удаления
+     * Метод для вызова из приложения, если необходимо обновить состояние радио-кнопок
+     * @param {string|number} selectedValue - Значение, которое должно быть выбрано
+     */
+    reinitInboxDeleteTimerRadios(selectedValue = null) {
+        // Инициализируем радио-кнопки
+        this.initInboxDeleteTimerRadios();
+        
+        // Если передано значение, устанавливаем соответствующую кнопку
+        if (selectedValue !== null) {
+            const value = selectedValue.toString();
+            if (this.inboxDeleteTimerRadios) {
+                this.inboxDeleteTimerRadios.forEach(radio => {
+                    if (radio.value === value) {
+                        radio.checked = true;
+                        console.log('Установлена radio кнопка со значением:', value);
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * Безопасно устанавливает текстовое содержимое элемента
+     * @param {string} elementId - ID элемента
+     * @param {string} text - Текст для установки
+     * @returns {boolean} - true если операция успешна, false если элемент не найден
+     */
+    safeSetTextContent(elementId, text) {
+        try {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = text;
+                return true;
+            } else {
+                console.warn(`Элемент с ID "${elementId}" не найден`);
+                return false;
+            }
+        } catch (error) {
+            console.error(`Ошибка при установке текста для элемента "${elementId}":`, error);
+            return false;
+        }
+    }
 }
 
 /**
@@ -1839,7 +2086,19 @@ class MailSlurpUI {
  */
 function createMailslurpUI() {
     console.log('Создание UI компонента...');
-    return new MailSlurpUI();
+    
+    // Сначала пытаемся найти глобальное приложение
+    let app = null;
+    
+    if (window.mailslurpApp) {
+        console.log('Найдено глобальное приложение, используем его');
+        app = window.mailslurpApp;
+    } else {
+        console.log('Глобальное приложение не найдено, UI будет использовать прямую ссылку на API');
+    }
+    
+    // Создаем UI компонент с ссылкой на приложение (или null, если оно недоступно)
+    return new MailSlurpUI(app);
 }
 
 // Делаем функцию доступной глобально

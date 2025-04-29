@@ -42,10 +42,17 @@ class MailSlurpApp {
             console.log('Инициализация приложения NeuroMail');
             
             // Инициализируем API клиент
-            this.api = new MailSlurpApi();
+            this.api = window.mailslurpApi || new MailSlurpApi();
+            window.mailslurpApi = this.api; // Убедимся, что глобальная ссылка установлена
             
-            // Инициализируем пользовательский интерфейс
-            this.ui = new MailSlurpUI();
+            // Инициализируем пользовательский интерфейс и передаем ему ссылку на приложение
+            this.ui = new MailSlurpUI(this);
+            
+            // В случае, если UI был создан без ссылки на приложение, установим ее явно
+            if (this.ui && !this.ui.app) {
+                console.log('UI был создан без ссылки на приложение, устанавливаем ее');
+                this.ui.setApp(this);
+            }
             
             // Привязываем обработчики событий
             this.bindUIEvents();
@@ -100,7 +107,41 @@ class MailSlurpApp {
             console.error('Ошибка при инициализации приложения:', error);
             
             // Показываем сообщение об ошибке
-            this.ui.showToast(`Ошибка при инициализации: ${error.message}`, 'error', 10000);
+            if (this.ui) {
+                try {
+                    // Проверяем, существует ли метод showToast у UI объекта
+                    if (typeof this.ui.showToast === 'function') {
+                        this.ui.showToast(`Ошибка при инициализации: ${error.message}`, 'error', 10000);
+                    } else {
+                        console.error('Метод showToast не найден в UI объекте');
+                        // Используем безопасную альтернативу
+                        if (window.showSafeToast) {
+                            window.showSafeToast(`Ошибка при инициализации: ${error.message}`, 'error', 10000);
+                        } else {
+                            console.log(`Ошибка при инициализации: ${error.message}`);
+                        }
+                    }
+                } catch (toastError) {
+                    console.error('Не удалось показать уведомление об ошибке:', toastError);
+                    console.log(`Оригинальная ошибка: ${error.message}`);
+                }
+            } else {
+                console.error('UI недоступен, невозможно показать сообщение об ошибке');
+                // Выводим в консоль в любом случае
+                console.log(`Ошибка инициализации: ${error.message}`);
+                
+                // Показываем alert только если нет других способов отобразить ошибку
+                try {
+                    if (window.showSafeToast) {
+                        window.showSafeToast(`Ошибка при инициализации: ${error.message}`, 'error', 10000);
+                    } else {
+                        alert(`Ошибка инициализации: ${error.message}`);
+                    }
+                } catch (e) {
+                    // В случае, если и alert не работает, просто логируем
+                    console.error('Невозможно показать ошибку:', e);
+                }
+            }
             return Promise.reject(error);
         }
     }
@@ -291,30 +332,18 @@ class MailSlurpApp {
     }
     
     /**
-     * Показать информацию о времени жизни почтового ящика
-     * @param {boolean} isPublicApi - Флаг использования публичного API
+     * Показать информацию о времени жизни почтового ящика при публичном API
+     * @param {boolean} isPublicApi - Флаг, указывающий на использование публичного API
      */
     showInboxLifetimeInfo(isPublicApi = false) {
-        if (isPublicApi && !this.api.secretCodeActivated) {
-            // Показываем уведомление о времени жизни ящика при публичном API
-            const lifetimeMinutes = this.api.publicApiInboxLifetime / 60000;
-            
-            if (window.i18n) {
-                // Используем локализованное сообщение
-                const message = window.i18n.t('public_api_warning').replace('{0}', lifetimeMinutes);
-                this.ui.showToast(message, 'warning', 8000);
-            } else {
-                // Используем стандартное сообщение
-                this.ui.showToast(`Внимание! При использовании публичного API почтовые ящики автоматически удаляются через ${lifetimeMinutes} мин. Для постоянных ящиков используйте персональный API ключ или активируйте секретный код.`, 'warning', 8000);
-            }
-        } else if (isPublicApi && this.api.secretCodeActivated) {
-            // Если секретный код активирован, показываем подтверждение
-            if (window.i18n) {
-                this.ui.showToast(window.i18n.t('secret_code_activated'), 'success', 5000);
-            } else {
-                this.ui.showToast(`Секретный код активирован. Ваши почтовые ящики не будут автоматически удаляться даже с публичным API.`, 'success', 5000);
-            }
-        }
+        if (!isPublicApi) return;
+
+        // Создаем уведомление о времени жизни ящика
+        this.ui.showToast(
+            `Внимание! При использовании публичного API, почтовые ящики и письма автоматически удаляются через 5 минут.`, 
+            'warning', 
+            10000
+        );
     }
     
     /**
@@ -1230,35 +1259,66 @@ class MailSlurpApp {
     }
     
     /**
-     * Сохранить настройки автоматического удаления
+     * Сохранить настройки автоудаления
      */
     saveAutoDelete() {
         try {
-            const autoDeleteInboxes = this.ui.autoDeleteInboxesCheckbox.checked;
-            const autoDeleteEmails = this.ui.autoDeleteEmailsCheckbox.checked;
-            const autoDeleteDays = parseInt(this.ui.autoDeleteDaysInput.value);
+            console.log('Сохранение настроек автоудаления в приложении');
             
-            // Получаем значение таймера удаления
-            let inboxDeleteTimer = 0;
-            this.ui.inboxDeleteTimerRadios.forEach(radio => {
-                if (radio.checked) {
-                    inboxDeleteTimer = parseInt(radio.value);
-                }
+            // Получаем значения из localStorage
+            const autoDeleteInboxes = localStorage.getItem('mailslurp_auto_delete_inboxes') === 'true';
+            const autoDeleteEmails = localStorage.getItem('mailslurp_auto_delete_emails') === 'true';
+            const autoDeleteDays = parseInt(localStorage.getItem('mailslurp_auto_delete_days') || '7');
+            const inboxDeleteTimer = parseInt(localStorage.getItem('mailslurp_inbox_delete_timer') || '0');
+            
+            console.log('Получены настройки автоудаления:', { 
+                autoDeleteInboxes, 
+                autoDeleteEmails, 
+                autoDeleteDays, 
+                inboxDeleteTimer 
             });
             
+            // Валидация
             if (autoDeleteEmails && (isNaN(autoDeleteDays) || autoDeleteDays <= 0)) {
                 throw new Error('Некорректное значение дней для автоудаления писем');
             }
             
-            localStorage.setItem('mailslurp_auto_delete_inboxes', autoDeleteInboxes.toString());
-            localStorage.setItem('mailslurp_auto_delete_emails', autoDeleteEmails.toString());
-            localStorage.setItem('mailslurp_auto_delete_days', autoDeleteDays.toString());
-            localStorage.setItem('mailslurp_inbox_delete_timer', inboxDeleteTimer.toString());
+            // Обновляем настройки в API, если необходимо
+            if (this.api) {
+                // Если в API есть соответствующие методы, вызываем их
+                if (typeof this.api.setAutoDeleteEmails === 'function') {
+                    this.api.setAutoDeleteEmails(autoDeleteEmails, autoDeleteDays);
+                }
+                
+                if (typeof this.api.setInboxDeleteTimeout === 'function') {
+                    this.api.setInboxDeleteTimeout(inboxDeleteTimer);
+                }
+            }
             
-            this.ui.showToast('Настройки автоудаления сохранены', 'success');
+            // Переинициализируем UI элементы, если они доступны
+            if (this.ui && typeof this.ui.reinitInboxDeleteTimerRadios === 'function') {
+                this.ui.reinitInboxDeleteTimerRadios(inboxDeleteTimer);
+            }
+            
+            // Показываем уведомление, если не было вызвано из UI
+            if (this.ui && !this.ui._autoDeleteSaveTriggeredFromUI) {
+                this.ui.showToast('Настройки автоудаления успешно сохранены', 'success');
+            }
+            
+            // Сбрасываем флаг, если он был установлен
+            if (this.ui) {
+                this.ui._autoDeleteSaveTriggeredFromUI = false;
+            }
+            
+            return true;
         } catch (error) {
             console.error('Ошибка при сохранении настроек автоудаления:', error);
-            this.ui.showToast(`Ошибка: ${error.message}`, 'error');
+            
+            if (this.ui) {
+                this.ui.showToast(`Ошибка: ${error.message}`, 'error');
+            }
+            
+            return false;
         }
     }
     
@@ -1987,19 +2047,25 @@ class MailSlurpApp {
      * Инициализировать настройки таймера удаления
      */
     initDeleteTimerSettings() {
-        // Получаем сохраненное значение таймера из localStorage
-        const savedTimer = parseInt(localStorage.getItem('mailslurp_inbox_delete_timer') || '0');
-        
-        // Устанавливаем соответствующую радио-кнопку
-        this.ui.inboxDeleteTimerRadios.forEach(radio => {
-            if (parseInt(radio.value) === savedTimer) {
-                radio.checked = true;
+        try {
+            // Получаем сохраненное значение таймера из localStorage
+            const savedTimer = parseInt(localStorage.getItem('mailslurp_inbox_delete_timer') || '0');
+            console.log('Инициализация настроек таймера удаления, сохраненное значение:', savedTimer);
+            
+            // Если UI доступен, используем его метод для инициализации
+            if (this.ui) {
+                console.log('Используем UI метод для инициализации радио-кнопок');
+                this.ui.reinitInboxDeleteTimerRadios(savedTimer);
+            } else {
+                console.warn('UI недоступен, инициализация таймера невозможна');
             }
-        });
-        
-        // Инициализируем переменные для таймеров
-        this.inboxDeleteTimeout = null;
-        this.deleteCountdownInterval = null;
+            
+            // Инициализируем переменные для таймеров
+            this.inboxDeleteTimeout = null;
+            this.deleteCountdownInterval = null;
+        } catch (error) {
+            console.error('Ошибка при инициализации настроек таймера удаления:', error);
+        }
     }
     
     /**
@@ -2020,7 +2086,7 @@ class MailSlurpApp {
             }
             
             // Показываем уведомление пользователю
-            this.ui.showToast(`Почтовый ящик ${data.emailAddress} автоматически удален через 5 минут (публичный API)`, 'warning', 5000);
+            this.ui.showToast(`Почтовый ящик ${data.emailAddress} и все его письма автоматически удалены через 5 минут (публичный API)`, 'warning', 5000);
             
             // Если это был текущий ящик, сбрасываем ID и очищаем localStorage
             if (this.currentInboxId === data.inboxId) {
@@ -2035,16 +2101,9 @@ class MailSlurpApp {
                 // Обновляем UI
                 this.ui.emailsList.innerHTML = `
                     <tr class="no-inbox-selected">
-                        <td colspan="4">Почтовый ящик был автоматически удален. Создайте новый ящик.</td>
+                        <td colspan="4" data-i18n="emails_no_inbox">Выберите почтовый ящик для просмотра писем</td>
                     </tr>
                 `;
-                this.ui.currentInboxTitle.textContent = '📧 Письма';
-                
-                // Если есть элемент с действиями ящика, удаляем его
-                const inboxActions = document.getElementById('inbox-actions');
-                if (inboxActions) {
-                    inboxActions.remove();
-                }
             }
         } catch (error) {
             console.error('Ошибка при обработке автоудаления ящика:', error);
@@ -2482,41 +2541,35 @@ class MailSlurpApp {
      * Запустить процесс автоудаления старых писем
      */
     startAutoDeleteEmails() {
-        // Проверяем настройки автоудаления
-        const autoDeleteEmails = localStorage.getItem('mailslurp_auto_delete_emails') === 'true';
-        const autoDeleteDays = parseInt(localStorage.getItem('mailslurp_auto_delete_days') || '7');
+        // Устанавливаем время жизни писем на 5 минут
+        const autoDeleteMinutes = 5;
         
-        if (!autoDeleteEmails || isNaN(autoDeleteDays) || autoDeleteDays <= 0) {
-            console.log('Автоудаление писем отключено или настроено некорректно');
-            return;
-        }
+        console.log(`Включено автоудаление писем старше ${autoDeleteMinutes} минут`);
         
-        console.log(`Включено автоудаление писем старше ${autoDeleteDays} дней`);
-        
-        // Запускаем периодическую проверку и удаление старых писем (каждые 6 часов)
+        // Запускаем периодическую проверку и удаление старых писем (каждую минуту)
         this.emailCleanupInterval = setInterval(() => {
-            this.cleanupOldEmails(autoDeleteDays);
-        }, 6 * 60 * 60 * 1000); // 6 часов
+            this.cleanupOldEmails(autoDeleteMinutes);
+        }, 1 * 60 * 1000); // 1 минута
         
         // Также сразу запускаем очистку при старте
-        this.cleanupOldEmails(autoDeleteDays);
+        this.cleanupOldEmails(autoDeleteMinutes);
     }
     
     /**
      * Очистить старые письма
-     * @param {number} days - Количество дней для хранения писем
+     * @param {number} minutes - Количество минут для хранения писем
      */
-    async cleanupOldEmails(days) {
+    async cleanupOldEmails(minutes) {
         if (!this.inboxes || !Array.isArray(this.inboxes) || this.inboxes.length === 0) {
             console.log('Нет доступных ящиков для очистки старых писем');
             return;
         }
         
-        console.log(`Проверка и удаление писем старше ${days} дней...`);
+        console.log(`Проверка и удаление писем старше ${minutes} минут...`);
         
-        // Текущая дата минус указанное количество дней
+        // Текущая дата минус указанное количество минут
         const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
+        cutoffDate.setMinutes(cutoffDate.getMinutes() - minutes);
         
         let deletedCount = 0;
         
@@ -2539,7 +2592,7 @@ class MailSlurpApp {
                     try {
                         await this.api.deleteEmail(email.id);
                         deletedCount++;
-                        console.log(`Удалено старое письмо: ${email.id} (от ${new Date(email.createdAt).toLocaleDateString()})`);
+                        console.log(`Удалено старое письмо: ${email.id} (от ${new Date(email.createdAt).toLocaleTimeString()})`);
                     } catch (e) {
                         console.error(`Ошибка при удалении письма ${email.id}:`, e);
                     }
